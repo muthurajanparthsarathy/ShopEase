@@ -1,0 +1,115 @@
+<main class="container py-4">
+  @if (config(); as cfg) {
+    @if (cfg.hero.enabled) {
+      <div class="hero mb-2" style="background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 60%, #3b82f6 100%); color:#fff; border-radius:1rem; padding:3rem 2.5rem; position:relative; overflow:hidden;">
+        <i class="bi bi-bag-heart-fill" style="position:absolute; right:-10px; bottom:-20px; font-size:11rem; opacity:.12;"></i>
+        <div style="max-width:620px; position:relative;">
+          <h1 class="mb-2" style="font-weight:800; letter-spacing:-1px;">{{ heroTitle() }}</h1>
+          <p class="fs-5 mb-4" style="opacity:.75;">{{ cfg.hero.subtitle }}</p>
+          @if (cfg.hero.ctaText) {
+            <a [routerLink]="cfg.hero.ctaLink || '/catalog'" class="btn btn-light btn-lg fw-semibold"><i class="bi bi-grid"></i> {{ cfg.hero.ctaText }}</a>
+          }
+        </div>
+      </div>
+    }
+
+    @for (sec of cfg.sections; track sec.id) {
+      @if (sec.enabled) {
+        @switch (sec.type) {
+          @case ('categories') {
+            <div class="d-flex justify-content-between align-items-center" style="margin:2rem 0 1rem;">
+              <h4 class="fw-bold mb-0"><i class="bi bi-tags text-primary"></i> {{ sec.title }}</h4>
+              <a routerLink="/catalog" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="row g-3">
+              @for (c of categories().slice(0, 12); track c.id) {
+                <div class="col-6 col-md-3 col-lg-2">
+                  <a [routerLink]="['/catalog']" [queryParams]="{ category: c.id }" class="text-decoration-none text-dark">
+                    <div class="h-100 text-center" style="cursor:pointer;border:1px solid var(--se-border);border-radius:12px;padding:1.1rem .75rem;background:#fff;">
+                      <div class="mx-auto mb-2 d-flex align-items-center justify-content-center" style="width:52px;height:52px;border-radius:50%;background:#eff6ff;color:var(--se-primary);font-size:1.4rem;">
+                        <i class="bi" [class]="'bi-' + catIcon(c.name)"></i>
+                      </div>
+                      <div class="fw-semibold small">{{ c.name }}</div>
+                      <div class="text-muted" style="font-size:.72rem">{{ c.count }} item(s)</div>
+                    </div>
+                  </a>
+                </div>
+              }
+            </div>
+          }
+          @case ('products') {
+            @if (sectionProducts(sec).length) {
+              <div class="d-flex justify-content-between align-items-center" style="margin:2rem 0 1rem;">
+                <h4 class="fw-bold mb-0"><i class="bi bi-star-fill text-warning"></i> {{ sec.title }}</h4>
+                <a routerLink="/catalog" class="btn btn-sm btn-outline-primary">Browse Catalog</a>
+              </div>
+              <div class="row g-4">
+                @for (p of sectionProducts(sec); track p.id) {
+                  <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card card-product h-100">
+                      <div class="product-placeholder"><i class="bi bi-box-seam"></i></div>
+                      <div class="card-body d-flex flex-column">
+                        <span class="product-brand">{{ p.brand }}</span>
+                        <h6 class="card-title mt-1">{{ p.name }}</h6>
+                        <div class="rating-row mb-1"><app-star-rating [rating]="statsFor(p.id).avg" /> <span class="rating-count">({{ statsFor(p.id).count }})</span></div>
+                        <span class="badge bg-light text-dark mb-2 align-self-start">{{ categoryName(p.categoryId) }}</span>
+                        <div class="mt-auto">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="product-price">{{ formatCurrency(p.price) }}</span>
+                            @if (p.stock > 0) { <span class="badge bg-success">In Stock</span> } @else { <span class="badge bg-danger">Out of Stock</span> }
+                          </div>
+                          <div class="d-grid gap-2">
+                            <a [routerLink]="['/catalog', p.id]" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye"></i> View</a>
+                            <button class="btn btn-add-cart btn-sm" [disabled]="p.stock <= 0 || preview" (click)="addToCart(p)"><i class="bi bi-cart-plus"></i> Add to Cart</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          }
+          @case ('banner') {
+            <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style="border-radius:1rem;padding:1.75rem 2rem;color:#fff;" [style.background]="sec.color || 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'">
+              <div>
+                <h4 class="fw-bold mb-1">{{ sec.title }}</h4>
+                <p class="mb-0" style="opacity:.75;">{{ sec.text }}</p>
+              </div>
+              @if (sec.link) { <a [routerLink]="sec.link" class="btn btn-light fw-semibold">Shop Now <i class="bi bi-arrow-right"></i></a> }
+            </div>
+          }
+          @case ('recentOrders') {
+            @if (recentOrders().length) {
+              <div class="d-flex justify-content-between align-items-center" style="margin:2rem 0 1rem;">
+                <h4 class="fw-bold mb-0"><i class="bi bi-clock-history text-info"></i> {{ sec.title }}</h4>
+                <a routerLink="/orders" class="btn btn-sm btn-outline-primary">All Orders</a>
+              </div>
+              <div class="row g-3">
+                @for (o of recentOrders(); track o.id) {
+                  <div class="col-md-4"><div class="card h-100"><div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="fw-bold">{{ o.orderNumber }}</span>
+                      <span class="badge" [class]="statusBadgeClass(o.status)">{{ o.status }}</span>
+                    </div>
+                    <div class="text-muted small">{{ formatDate(o.createdAt) }} · {{ o.items.length }} item(s)</div>
+                    <div class="fw-bold text-primary mt-1">{{ formatCurrency(o.total) }}</div>
+                    <a routerLink="/orders" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-eye"></i> View</a>
+                  </div></div></div>
+                }
+              </div>
+            }
+          }
+        }
+      }
+    }
+
+    @if (!cfg.hero.enabled && !cfg.sections.length) {
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-layout-text-window"></i></div>
+        <h5>No content configured</h5>
+        <p>An admin can set up this page from <strong>Admin → Content</strong>.</p>
+      </div>
+    }
+  }
+</main>

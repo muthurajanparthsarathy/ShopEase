@@ -1,0 +1,60 @@
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="text-center mb-4">
+      <h1 class="brand-title"><i class="bi bi-bag-heart-fill brand-icon"></i> ShopEase</h1>
+      <p class="brand-subtitle">Welcome back! Sign in to your account.</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="alert alert-info py-2 small mb-3">
+        <i class="bi bi-info-circle-fill"></i> Fields marked with <span class="text-danger fw-bold">*</span> are mandatory.
+      </div>
+
+      <div class="mb-3">
+        <label for="login-email" class="form-label">Email Address <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input type="email" class="form-control" id="login-email" placeholder="you@example.com" formControlName="email"
+                 [class.is-invalid]="submitted() && form.controls.email.invalid" [class.is-valid]="submitted() && form.controls.email.valid">
+          <div class="invalid-feedback">{{ errorFor('email') }}</div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="login-password" class="form-label">Password <span class="text-danger">*</span></label>
+        <div class="input-group-password">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input [type]="showPassword() ? 'text' : 'password'" class="form-control" id="login-password" placeholder="Enter password" formControlName="password"
+                   [class.is-invalid]="submitted() && form.controls.password.invalid" [class.is-valid]="submitted() && form.controls.password.valid">
+            <div class="invalid-feedback">{{ errorFor('password') }}</div>
+          </div>
+          <span class="password-toggle" (click)="togglePassword()">
+            <i class="bi" [class.bi-eye]="!showPassword()" [class.bi-eye-slash]="showPassword()"></i>
+          </span>
+        </div>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert alert-danger" role="alert">{{ errorMessage() }}</div>
+      }
+
+      <button type="submit" class="btn btn-shopease w-100 py-2 mb-3">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In
+      </button>
+
+      <p class="text-center text-muted mb-0">
+        Don't have an account? <a routerLink="/register" class="text-primary fw-semibold">Register here</a>
+      </p>
+    </form>
+
+    <hr>
+    <div class="text-center">
+      <small class="text-muted">
+        <strong>Demo Accounts:</strong><br>
+        Admin: admin&#64;shopease.com / Admin&#64;123<br>
+        Customer: rahul&#64;email.com / Rahul&#64;123
+      </small>
+    </div>
+  </div>
+</div>

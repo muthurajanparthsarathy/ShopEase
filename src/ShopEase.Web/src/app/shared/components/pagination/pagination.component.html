@@ -1,0 +1,77 @@
+@if (page().totalPages > 1) {
+  <nav [attr.aria-label]="ariaLabel()" class="app-pagination">
+    <!-- Numbered pagination: full view (desktop/tablet, hidden on very small screens) -->
+    <ul class="pagination app-pagination__list app-pagination__list--full mb-0">
+      <li class="page-item" [class.disabled]="!page().hasPrev">
+        <button
+          type="button"
+          class="page-link app-pagination__nav-btn"
+          [disabled]="!page().hasPrev"
+          (click)="goTo(page().currentPage - 1)"
+          aria-label="Previous page"
+        >
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
+          <span class="app-pagination__nav-label">Previous</span>
+        </button>
+      </li>
+
+      @for (item of pageItems(); track $index) {
+        @if (item === 'ellipsis') {
+          <li class="page-item disabled app-pagination__ellipsis" aria-hidden="true">
+            <span class="page-link">&hellip;</span>
+          </li>
+        } @else {
+          <li class="page-item" [class.active]="item === page().currentPage">
+            <button
+              type="button"
+              class="page-link"
+              [attr.aria-current]="item === page().currentPage ? 'page' : null"
+              [attr.aria-label]="'Go to page ' + item"
+              (click)="goTo(item)"
+            >{{ item }}</button>
+          </li>
+        }
+      }
+
+      <li class="page-item" [class.disabled]="!page().hasNext">
+        <button
+          type="button"
+          class="page-link app-pagination__nav-btn"
+          [disabled]="!page().hasNext"
+          (click)="goTo(page().currentPage + 1)"
+          aria-label="Next page"
+        >
+          <span class="app-pagination__nav-label">Next</span>
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </li>
+    </ul>
+
+    <!-- Compact view: very small screens — "‹ Previous | Page 5 of 20 | Next ›" -->
+    <div class="app-pagination__compact">
+      <button
+        type="button"
+        class="page-link app-pagination__nav-btn"
+        [disabled]="!page().hasPrev"
+        (click)="goTo(page().currentPage - 1)"
+        aria-label="Previous page"
+      >
+        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        <span class="app-pagination__nav-label">Previous</span>
+      </button>
+
+      <span class="app-pagination__status" aria-live="polite">Page {{ page().currentPage }} of {{ page().totalPages }}</span>
+
+      <button
+        type="button"
+        class="page-link app-pagination__nav-btn"
+        [disabled]="!page().hasNext"
+        (click)="goTo(page().currentPage + 1)"
+        aria-label="Next page"
+      >
+        <span class="app-pagination__nav-label">Next</span>
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </nav>
+}

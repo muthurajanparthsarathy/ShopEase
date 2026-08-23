@@ -1,0 +1,27 @@
+# ── Build output & dependencies — never belong in a build context ──
+**/node_modules
+**/dist
+**/.angular
+**/bin
+**/obj
+
+# ── Editor / OS noise ──
+**/.vs
+**/.vscode
+**/.idea
+**/*.user
+**/*.suo
+**/Thumbs.db
+**/.DS_Store
+
+# ── Docker's own files ──
+**/Dockerfile
+**/.dockerignore
+docker-compose*.yml
+
+# ── Backups created before containerising ──
+**/*.bak
+
+# ── Local secrets must be injected at runtime, never baked into an image ──
+**/appsettings.*.local.json
+**/*.pfx

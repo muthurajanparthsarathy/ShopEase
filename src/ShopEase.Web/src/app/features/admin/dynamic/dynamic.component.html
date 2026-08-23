@@ -1,0 +1,155 @@
+<main class="container-fluid py-4 px-4">
+  <h2 class="mb-3"><i class="bi bi-ui-checks-grid text-primary"></i> Dynamic Handling</h2>
+
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-fields"><i class="bi bi-input-cursor-text"></i> Custom Fields</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-statuses"><i class="bi bi-tags"></i> Statuses &amp; Lookups</button></li>
+  </ul>
+
+  <div class="tab-content">
+    <!-- Custom Fields tab -->
+    <div class="tab-pane fade show active" id="tab-fields">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="alert alert-info py-2 small mb-0 flex-grow-1 me-3">
+          <i class="bi bi-info-circle-fill"></i> Define extra fields at runtime. Fields targeting <strong>Orders</strong> and <strong>Products</strong> render in their add/edit/view screens.
+        </div>
+        <button class="btn btn-shopease text-nowrap" (click)="openAdd()"><i class="bi bi-plus-lg"></i> New Field</button>
+      </div>
+
+      <div class="filter-panel">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">Entity</label>
+            <select class="form-select" [ngModel]="filterEntity()" (ngModelChange)="filterEntity.set($event)">
+              <option value="">All Entities</option>
+              @for (e of entities; track e.value) { <option [value]="e.value">{{ e.label }}</option> }
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
+              <option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-end"><button class="btn btn-clear-filter w-100" (click)="clearFilters()"><i class="bi bi-x-circle"></i> Clear Filter</button></div>
+        </div>
+      </div>
+
+      <p class="text-muted">{{ filteredFields().length }} field(s)</p>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>#</th><th>Label</th><th>Key</th><th>Entity</th><th>Type</th><th>Required</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            @if (!filteredFields().length) {
+              <tr><td colspan="8" class="text-center text-muted py-4">No custom fields. Click <strong>New Field</strong> to add one.</td></tr>
+            }
+            @for (f of filteredFields(); track f.id; let i = $index) {
+              <tr>
+                <td>{{ i + 1 }}</td>
+                <td class="fw-semibold">{{ f.label }}</td>
+                <td><code>{{ f.key }}</code></td>
+                <td><span class="badge bg-light text-dark">{{ entityLabel(f.entity) }}</span></td>
+                <td>{{ typeLabel(f.type) }} @if (f.type === 'dropdown' && f.options?.length) { <small class="text-muted">({{ f.options.join(', ') }})</small> }</td>
+                <td>@if (f.required) { <span class="badge bg-warning text-dark">Required</span> } @else { <span class="text-muted small">Optional</span> }</td>
+                <td><span class="badge" [class.bg-success]="f.active" [class.bg-secondary]="!f.active">{{ f.active ? 'Active' : 'Inactive' }}</span></td>
+                <td class="text-nowrap">
+                  <button class="btn btn-outline-secondary btn-sm" [title]="f.active ? 'Deactivate' : 'Activate'" (click)="toggleActive(f)"><i class="bi" [class.bi-pause-circle]="f.active" [class.bi-play-circle]="!f.active"></i></button>
+                  <button class="btn btn-outline-primary btn-sm" title="Edit" (click)="openEdit(f)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-outline-danger btn-sm" title="Delete" (click)="deleteField(f)"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Statuses & Lookups tab -->
+    <div class="tab-pane fade" id="tab-statuses">
+      <div class="alert alert-info py-2 small">
+        <i class="bi bi-info-circle-fill"></i> Add or remove status values and payment methods on the fly. New values appear in filter dropdowns and get the colour you pick. A value that is currently in use by records cannot be deleted.
+      </div>
+      <div class="row g-4">
+        @for (lk of lookups; track lk.key) {
+          <div class="col-lg-4">
+            <div class="card h-100">
+              <div class="card-header bg-white"><strong><i class="bi" [class]="'bi-' + lk.icon + ' text-primary'"></i> {{ lk.label }}</strong></div>
+              <div class="card-body d-flex flex-column">
+                <div class="mb-3 flex-grow-1">
+                  @if (!lookupItems(lk.key).length) {
+                    <span class="text-muted small">No values yet.</span>
+                  }
+                  @for (it of lookupItems(lk.key); track it.id) {
+                    <span class="badge me-1 mb-2 d-inline-flex align-items-center gap-1" [class]="badgeClassFor(lk.kind, it.name)">
+                      {{ it.name }} <i class="bi bi-x-circle" style="cursor:pointer" title="Delete" (click)="removeLookup(lk.key, lk.label, it.name)"></i>
+                    </span>
+                  }
+                </div>
+                <div class="row g-2 align-items-end">
+                  <div class="col"><input type="text" class="form-control form-control-sm" [placeholder]="'New ' + lk.label.replace('es', '').replace('s','') + ' name'" [(ngModel)]="addLookupValue[lk.key]"></div>
+                  @if (lk.kind === 'status') {
+                    <div class="col-auto">
+                      <select class="form-select form-select-sm" [(ngModel)]="addLookupColor[lk.key]">
+                        @for (c of colors; track c.v) { <option [value]="c.v">{{ c.l }}</option> }
+                      </select>
+                    </div>
+                  }
+                  <div class="col-auto"><button class="btn btn-sm btn-shopease" (click)="addLookup(lk.key, lk.label, lk.kind)"><i class="bi bi-plus-lg"></i> Add</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Field Modal -->
+  <div class="modal fade" id="fieldModal" tabindex="-1" #fieldModalEl>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editingId() ? 'Edit Field' : 'New Field' }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small"><i class="bi bi-info-circle-fill"></i> Fields marked with <span class="text-danger fw-bold">*</span> are mandatory.</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Field Label <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" placeholder="e.g., Courier Partner" [ngModel]="fLabel()" (ngModelChange)="fLabel.set($event)" [class.is-invalid]="submitted() && !fLabel().trim()">
+              <div class="invalid-feedback">Please enter a label.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Target Entity <span class="text-danger">*</span></label>
+              <select class="form-select" [ngModel]="fEntity()" (ngModelChange)="fEntity.set($event)">
+                @for (e of entities; track e.value) { <option [value]="e.value">{{ e.label }}</option> }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Field Type <span class="text-danger">*</span></label>
+              <select class="form-select" [ngModel]="fType()" (ngModelChange)="fType.set($event)">
+                @for (t of types; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+              </select>
+            </div>
+            @if (fType() === 'dropdown') {
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Dropdown Options <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Comma separated, e.g. Low, Medium, High" [ngModel]="fOptions()" (ngModelChange)="fOptions.set($event)" [class.is-invalid]="submitted() && !fOptions().trim()">
+                <div class="invalid-feedback">Enter at least one option.</div>
+              </div>
+            }
+            <div class="col-12">
+              <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="f-required" [ngModel]="fRequired()" (ngModelChange)="fRequired.set($event)"><label class="form-check-label" for="f-required">Required field</label></div>
+              <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="f-active" [ngModel]="fActive()" (ngModelChange)="fActive.set($event)"><label class="form-check-label" for="f-active">Active</label></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-shopease" (click)="saveField()"><i class="bi bi-check-lg"></i> Save Field</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

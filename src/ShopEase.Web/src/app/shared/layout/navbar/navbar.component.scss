@@ -1,0 +1,409 @@
+// Responsive top navigation — hamburger always top-left on mobile, horizontal links on tablet/desktop.
+// Breakpoint rationale: switches to the hamburger below 992px (not just phones) because the admin
+// bar alone has 9 links; anything narrower than a landscape tablet can't fit them horizontally.
+$se-nav-breakpoint: 992px;
+
+:host {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+}
+
+// ── Header shell ──────────────────────────────────────────────
+.se-header {
+  position: relative;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--se-primary) 0%, var(--se-info) 40%, var(--se-accent) 100%);
+    z-index: 1;
+  }
+}
+
+.se-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  max-width: 1320px;
+  margin: 0 auto;
+  min-height: 56px;
+  transition: padding 0.2s ease;
+}
+
+.se-header-admin .se-header-bar {
+  max-width: none;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.se-header-scrolled .se-header-bar {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.4);
+}
+
+// ── Hamburger — first in the DOM, forced to order:-1 so it is always the left-most element ──
+.se-hamburger {
+  order: -1;
+  flex-shrink: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px; // WCAG 2.5.5 target-size guidance — comfortably tappable
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--se-accent);
+    outline-offset: 2px;
+  }
+}
+
+.se-hamburger-box {
+  position: relative;
+  width: 20px;
+  height: 15px;
+  display: inline-block;
+}
+
+.se-hamburger-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: #fff;
+  transition: transform 0.3s ease, opacity 0.2s ease, top 0.3s ease;
+
+  &:nth-child(1) {
+    top: 0;
+  }
+  &:nth-child(2) {
+    top: 6.5px;
+  }
+  &:nth-child(3) {
+    top: 13px;
+  }
+}
+
+.se-hamburger.is-open {
+  .se-hamburger-line:nth-child(1) {
+    top: 6.5px;
+    transform: rotate(45deg);
+  }
+  .se-hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+  .se-hamburger-line:nth-child(3) {
+    top: 6.5px;
+    transform: rotate(-45deg);
+  }
+}
+
+// ── Brand ─────────────────────────────────────────────────────
+.se-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #fff;
+  }
+
+  .brand-icon {
+    color: var(--se-accent);
+    filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.4));
+  }
+
+  .badge {
+    font-size: 0.6rem;
+    padding: 0.3em 0.6em;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+  }
+}
+
+// ── Desktop / tablet horizontal nav ─────────────────────────────
+.se-desktop-nav {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 0.25rem;
+  margin-left: 1rem;
+}
+
+.se-nav-list {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.1rem;
+
+  &.se-nav-icons {
+    margin-left: auto;
+    gap: 0.25rem;
+  }
+
+  &.se-account-menu {
+    margin-left: 1rem;
+    padding-left: 1rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+
+    &.se-account-menu--guest {
+      gap: 0.1rem;
+    }
+  }
+}
+
+.se-nav-list li > a,
+.se-nav-list li > .dropdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.92rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+  }
+
+  &.active {
+    color: #fff;
+    background: rgba(37, 99, 235, 0.28);
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: 1px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--se-accent);
+    }
+  }
+}
+
+.se-nav-list li > a.dropdown-toggle::after {
+  margin-left: 0.35rem;
+}
+
+.mobile-only-label {
+  display: none;
+}
+
+// Overrides the dark-header `.se-nav-list li > a` (white) text color for this light-background
+// dropdown — without this, items other than "Logout" (saved by `.text-danger`) render
+// white-on-white and disappear.
+.se-header .dropdown-menu {
+  border: none;
+  border-radius: var(--se-radius);
+  box-shadow: var(--se-shadow-lg);
+  margin-top: 0.4rem;
+
+  li > a {
+    color: #1e293b;
+
+    &:hover,
+    &:focus {
+      color: #0f172a;
+      background: rgba(37, 99, 235, 0.08);
+      transform: none;
+    }
+  }
+}
+
+// Cart/wishlist/notification icon badges (shared by desktop cluster + mobile compact cart link)
+.nav-icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-icon-wrapper .badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  font-size: 0.65rem;
+  padding: 0.2em 0.45em;
+}
+
+// Compact cart shortcut shown in the mobile header bar (hidden at/above the breakpoint)
+.se-mobile-cart {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  color: #fff;
+  padding: 0.5rem;
+}
+
+// ── Responsive switch ────────────────────────────────────────
+@media (max-width: #{$se-nav-breakpoint - 1px}) {
+  .se-desktop-nav {
+    display: none;
+  }
+
+  .se-hamburger {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: $se-nav-breakpoint) {
+  .se-mobile-cart,
+  .se-nav-backdrop,
+  .se-mobile-nav {
+    display: none !important;
+  }
+}
+
+// ── Mobile dropdown panel ───────────────────────────────────
+.se-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1035;
+  animation: se-fade-in 0.2s ease;
+}
+
+@keyframes se-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Animating to a true "auto" height without guessing a max-height: the row track goes 0fr → 1fr,
+// and the single grid-item child (.se-mobile-nav-inner) clips to that track via min-height:0 + overflow.
+.se-mobile-nav {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  background: #16213a;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.35);
+  opacity: 0;
+  transform: translateY(-8px);
+  visibility: hidden;
+  z-index: 1036;
+  // Smooth open/close: animate height/opacity/position together, then hide from the a11y tree
+  // only once the closing transition has actually finished (the delayed `visibility`).
+  transition: grid-template-rows 0.35s ease, opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.35s;
+
+  &.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+    transition: grid-template-rows 0.35s ease, opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0s;
+  }
+}
+
+.se-mobile-nav-inner {
+  min-height: 0; // required for the grid-row child to actually clip instead of forcing intrinsic size
+  max-height: 80vh; // static safety cap — not part of the animation, just stops it filling the whole screen
+  overflow-y: auto;
+}
+
+.se-mobile-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+
+  li > a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 0.75rem; // generous tap target on mobile
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+
+    &:hover,
+    &:active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    &.active {
+      background: rgba(37, 99, 235, 0.28);
+      color: #fff;
+    }
+  }
+
+  .mobile-only-label {
+    display: inline;
+  }
+
+  .nav-icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .nav-icon-wrapper .badge {
+    position: static;
+    margin-left: 0.35rem;
+    font-size: 0.65rem;
+    padding: 0.2em 0.45em;
+  }
+}
+
+.se-mobile-nav hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 0.25rem 0.75rem;
+}
+
+// Respect reduced-motion preferences
+@media (prefers-reduced-motion: reduce) {
+  .se-hamburger-line,
+  .se-mobile-nav,
+  .se-nav-backdrop,
+  .se-nav-list li > a {
+    transition: none !important;
+    animation: none !important;
+  }
+}

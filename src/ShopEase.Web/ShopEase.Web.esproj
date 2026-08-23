@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.0">
+  <PropertyGroup>
+    <StartupCommand>npm start</StartupCommand>
+    <JavaScriptTestRoot>src\</JavaScriptTestRoot>
+    <JavaScriptTestFramework>Jasmine</JavaScriptTestFramework>
+    <ShouldRunBuildScript>false</ShouldRunBuildScript>
+    <BuildCommand>npm run build</BuildCommand>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Keep Solution Explorer focused on source; build output and deps stay out of the project tree. -->
+    <Content Remove="node_modules\**" />
+    <Content Remove="dist\**" />
+    <Content Remove=".angular\**" />
+  </ItemGroup>
+</Project>

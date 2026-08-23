@@ -1,0 +1,103 @@
+<main class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tags text-primary"></i> Category Management</h2>
+    <button class="btn btn-shopease" data-bs-toggle="modal" data-bs-target="#catModal" (click)="openAdd()"><i class="bi bi-plus-lg"></i> Add Category</button>
+  </div>
+
+  <p class="text-muted">{{ paged().totalItems }} categor{{ paged().totalItems === 1 ? 'y' : 'ies' }}</p>
+
+  <div class="row g-4">
+    @if (!paged().items.length) {
+      <div class="col-12"><div class="empty-state"><div class="empty-icon"><i class="bi bi-tags"></i></div><h5>No categories</h5></div></div>
+    }
+    @for (c of paged().items; track c.id) {
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-tag fs-1 text-primary"></i>
+            <h5 class="mt-2">{{ c.name }}</h5>
+            <p class="text-muted small">{{ c.description || 'No description' }}</p>
+            <span class="badge bg-light text-dark">{{ productCountFor(c.id) }} product(s)</span>
+          </div>
+          <div class="card-footer bg-transparent text-center">
+            <button class="btn btn-outline-info btn-sm" title="View" (click)="openView(c)"><i class="bi bi-eye"></i></button>
+            <button class="btn btn-outline-primary btn-sm" title="Edit" (click)="openEdit(c)"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger btn-sm" title="Delete" (click)="deleteCategory(c)"><i class="bi bi-trash"></i></button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (paged().totalPages > 1) {
+    <div class="mt-3">
+      <app-pagination [page]="paged()" (pageChange)="goToPage($event)" />
+    </div>
+  }
+
+  <!-- Add/Edit Category Modal -->
+  <div class="modal fade" id="catModal" tabindex="-1" #catModalEl>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editingId() ? 'Edit Category' : 'Add Category' }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle-fill"></i> Fields marked with <span class="text-danger fw-bold">*</span> are mandatory.</div>
+          @if (editingId()) {
+            <div class="field-legend mb-3">
+              <i class="bi bi-info-circle-fill text-primary"></i> <strong>Field Guide:</strong>
+              <span class="field-badge badge-editable"><i class="bi bi-pencil-fill"></i> Editable</span> fields can be updated.
+            </div>
+          }
+          <form [formGroup]="form" novalidate>
+            @if (editingId()) {
+              <div class="mb-3">
+                <label class="form-label">Category ID</label>
+                <input type="text" class="form-control field-readonly" [value]="editingId()" readonly>
+              </div>
+            }
+            <div class="mb-3">
+              <label class="form-label">Category Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [class.field-editable]="!!editingId()" formControlName="name" [class.is-invalid]="submitted() && form.controls.name.invalid">
+              <div class="invalid-feedback">{{ errorFor() }}</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Description <span class="text-muted small">(optional)</span></label>
+              <textarea class="form-control" [class.field-editable]="!!editingId()" rows="2" formControlName="description"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-shopease" (click)="save()"><i class="bi bi-check-lg"></i> Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Category Modal -->
+  <div class="modal fade" id="viewCatModal" tabindex="-1" #viewModalEl>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-eye text-info"></i> Category Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          @if (viewingCategory(); as c) {
+            <div class="text-center mb-3"><i class="bi bi-tag fs-1 text-primary"></i></div>
+            <div class="mb-3"><label class="form-label text-muted small mb-0">Category Name</label><div class="fw-semibold fs-5">{{ c.name }}</div></div>
+            <div class="mb-3"><label class="form-label text-muted small mb-0">Description</label><div class="bg-light p-2 rounded">{{ c.description || 'No description provided.' }}</div></div>
+            <div class="mb-3"><label class="form-label text-muted small mb-0">Products in Category</label><div><span class="badge bg-primary">{{ productCountFor(c.id) }}</span> product(s)</div></div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-shopease" data-bs-dismiss="modal" (click)="viewToEdit()"><i class="bi bi-pencil"></i> Edit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

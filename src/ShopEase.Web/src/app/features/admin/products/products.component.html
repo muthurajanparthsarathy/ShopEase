@@ -1,0 +1,235 @@
+<main class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-box-seam text-primary"></i> Product Management</h2>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-success" (click)="bulkUploadOpen.set(!bulkUploadOpen())"><i class="bi bi-cloud-arrow-up"></i> Bulk Upload</button>
+      <button class="btn btn-shopease" data-bs-toggle="modal" data-bs-target="#productModal" (click)="openAdd()"><i class="bi bi-plus-lg"></i> Add Product</button>
+    </div>
+  </div>
+
+  @if (bulkUploadOpen()) {
+    <div class="mb-4">
+      <div class="card border-success">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-cloud-arrow-up"></i> Bulk Product Upload</h6>
+          <button class="btn btn-sm btn-light" (click)="downloadTemplate()"><i class="bi bi-download"></i> Download CSV Template</button>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Upload CSV File</label>
+              <input type="file" class="form-control" accept=".csv" (change)="onBulkFile($event)">
+              <small class="text-muted">Accepted format: CSV with headers matching the template. Max 100 products per upload.</small>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-success w-100" [disabled]="bulkValidCount === 0" (click)="uploadBulk()"><i class="bi bi-upload"></i> Upload & Import</button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-secondary w-100" (click)="clearBulk()"><i class="bi bi-x-lg"></i> Clear</button>
+            </div>
+          </div>
+
+          @if (bulkRows().length) {
+            <div class="mt-3">
+              <h6 class="fw-bold">Preview ({{ bulkRows().length }} products)</h6>
+              <div class="table-responsive" style="max-height:250px; overflow-y:auto;">
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light"><tr><th>#</th><th>Name</th><th>SKU</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th></tr></thead>
+                  <tbody>
+                    @for (r of bulkRows(); track $index; let i = $index) {
+                      <tr [class.table-danger]="!r.valid">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ r.name }}</td>
+                        <td><code>{{ r.sku.toUpperCase() }}</code></td>
+                        <td>{{ r.brand }}</td>
+                        <td>{{ r.category }}</td>
+                        <td>{{ r.price !== undefined ? formatCurrency(r.price) : '' }}</td>
+                        <td>{{ r.stock !== undefined ? r.stock : '' }}</td>
+                        <td><span class="badge" [class.bg-success]="r.valid" [class.bg-danger]="!r.valid" style="font-size:.7rem">{{ r.valid ? 'Valid' : r.errors.join('; ') }}</span></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+          @if (bulkResultMessage(); as msg) {
+            <div class="mt-3">
+              <div class="alert mb-0" [class.alert-success]="msg.ok" [class.alert-warning]="!msg.ok">
+                <i class="bi" [class.bi-check-circle-fill]="msg.ok" [class.bi-exclamation-triangle-fill]="!msg.ok"></i>
+                <strong>Import Complete:</strong> {{ msg.text }}
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="filter-panel">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4"><label class="form-label">Search</label><input type="text" class="form-control" placeholder="Search by name, brand, SKU..." [ngModel]="search()" (ngModelChange)="search.set($event); onFilterChange()"></div>
+      <div class="col-md-3">
+        <label class="form-label">Category</label>
+        <select class="form-select" [ngModel]="filterCategory()" (ngModelChange)="filterCategory.set($event); onFilterChange()">
+          <option value="">All Categories</option>
+          @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Stock</label>
+        <select class="form-select" [ngModel]="filterStock()" (ngModelChange)="filterStock.set($event); onFilterChange()">
+          <option value="">All</option><option value="in">In Stock</option><option value="out">Out of Stock</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Sort</label>
+        <select class="form-select" [ngModel]="filterSort()" (ngModelChange)="filterSort.set($event); onFilterChange()">
+          <option value="">Default</option><option value="price-asc">Price: Low-High</option><option value="price-desc">Price: High-Low</option><option value="name-asc">Name: A-Z</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-flex align-items-end"><button class="btn btn-clear-filter w-100" (click)="clearFilters()"><i class="bi bi-x-circle"></i></button></div>
+    </div>
+  </div>
+
+  <p class="text-muted">{{ paged().totalItems }} product(s) found</p>
+
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>#</th><th>SKU</th><th>Product Name</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead>
+      <tbody>
+        @if (!paged().items.length) {
+          <tr><td colspan="8" class="text-center text-muted py-4">No products found.</td></tr>
+        }
+        @for (p of paged().items; track p.id; let i = $index) {
+          <tr>
+            <td>{{ (paged().currentPage - 1) * paged().perPage + i + 1 }}</td>
+            <td><code>{{ p.sku }}</code></td>
+            <td class="fw-semibold">{{ p.name }}</td>
+            <td>{{ p.brand }}</td>
+            <td><span class="badge bg-light text-dark">{{ categoryName(p.categoryId) }}</span></td>
+            <td>{{ formatCurrency(p.price) }}</td>
+            <td [class.text-danger]="p.stock === 0" [class.fw-bold]="p.stock === 0" [class.text-warning]="p.stock > 0 && p.stock < 10">{{ p.stock }}</td>
+            <td>
+              <button class="btn btn-outline-info btn-sm" title="View" (click)="openView(p)"><i class="bi bi-eye"></i></button>
+              <button class="btn btn-outline-primary btn-sm" title="Edit" (click)="openEdit(p)"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-outline-danger btn-sm" title="Delete" (click)="deleteProduct(p)"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (paged().totalPages > 1) {
+    <div class="mt-3">
+      <app-pagination [page]="paged()" (pageChange)="goToPage($event)" />
+    </div>
+  }
+
+  <!-- Add/Edit Product Modal -->
+  <div class="modal fade" id="productModal" tabindex="-1" #productModalEl>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editingId() ? 'Edit Product' : 'Add Product' }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle-fill"></i> Fields marked with <span class="text-danger fw-bold">*</span> are mandatory.</div>
+          @if (editingId()) {
+            <div class="field-legend mb-3">
+              <i class="bi bi-info-circle-fill text-primary"></i> <strong>Field Guide:</strong>
+              <span class="field-badge badge-editable"><i class="bi bi-pencil-fill"></i> Editable</span> fields can be updated.
+              <span class="field-badge badge-locked"><i class="bi bi-lock-fill"></i> Read-only</span> fields are fixed identifiers and cannot be changed.
+            </div>
+          }
+          <form [formGroup]="form" novalidate>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">Product Name <span class="text-danger">*</span> @if (editingId()) { <span class="field-badge badge-editable"><i class="bi bi-pencil-fill"></i> Editable</span> }</label>
+                <input type="text" class="form-control" formControlName="name" [class.field-editable]="!!editingId()" [class.is-invalid]="submitted() && form.controls.name.invalid">
+                <div class="invalid-feedback">{{ errorFor('name') }}</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">SKU <span class="text-danger">*</span> @if (editingId()) { <span class="field-badge badge-locked"><i class="bi bi-lock-fill"></i> Read-only</span> }</label>
+                <input type="text" class="form-control" placeholder="EL-001" formControlName="sku" [readOnly]="!!editingId()" [class.field-readonly]="!!editingId()" [class.is-invalid]="submitted() && form.controls.sku.invalid">
+                <div class="invalid-feedback">{{ errorFor('sku') }}</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Brand <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" formControlName="brand" [class.field-editable]="!!editingId()" [class.is-invalid]="submitted() && form.controls.brand.invalid">
+                <div class="invalid-feedback">{{ errorFor('brand') }}</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Category <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="categoryId" [class.field-editable]="!!editingId()" [class.is-invalid]="submitted() && form.controls.categoryId.invalid">
+                  <option value="">Select category</option>
+                  @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+                </select>
+                <div class="invalid-feedback">Select a category.</div>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Price (₹) <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" min="0.01" step="0.01" formControlName="price" [class.field-editable]="!!editingId()" [class.is-invalid]="submitted() && form.controls.price.invalid">
+                <div class="invalid-feedback">Enter a valid price.</div>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Stock <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" min="0" formControlName="stock" [class.field-editable]="!!editingId()" [class.is-invalid]="submitted() && form.controls.stock.invalid">
+                <div class="invalid-feedback">Enter valid stock.</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description <span class="text-muted small">(optional)</span></label>
+                <textarea class="form-control" rows="3" formControlName="description" [class.field-editable]="!!editingId()"></textarea>
+              </div>
+            </div>
+          </form>
+          <app-custom-fields-form entity="product" [initialValues]="cfInitialValues()" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-shopease" (click)="save()"><i class="bi bi-check-lg"></i> Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Product Modal -->
+  <div class="modal fade" id="viewProductModal" tabindex="-1" #viewModalEl>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-eye text-info"></i> Product Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          @if (viewingProduct(); as p) {
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Product Name</label><div class="fw-semibold fs-5">{{ p.name }}</div></div>
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Brand</label><div>{{ p.brand }}</div></div>
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Category</label><div><span class="badge bg-light text-dark">{{ categoryName(p.categoryId) }}</span></div></div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3"><label class="form-label text-muted small mb-0">SKU</label><div><code class="fs-6">{{ p.sku }}</code></div></div>
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Price</label><div class="fw-bold text-primary fs-5">{{ formatCurrency(p.price) }}</div></div>
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Stock</label><div class="fw-bold" [class.text-danger]="p.stock===0" [class.text-warning]="p.stock>0 && p.stock<10" [class.text-success]="p.stock>=10">{{ p.stock }} units</div></div>
+              </div>
+              <div class="col-12">
+                <label class="form-label text-muted small mb-0">Description</label>
+                <div class="bg-light p-2 rounded">{{ p.description || 'No description provided.' }}</div>
+              </div>
+              <div class="col-md-6"><label class="form-label text-muted small mb-0">Created</label><div class="small">{{ formatDateTime(p.createdAt) }}</div></div>
+              <app-custom-fields-display entity="product" [values]="p.custom ?? {}" />
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-shopease" data-bs-dismiss="modal" (click)="viewToEdit()"><i class="bi bi-pencil"></i> Edit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

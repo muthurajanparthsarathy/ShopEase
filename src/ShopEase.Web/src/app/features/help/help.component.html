@@ -1,0 +1,127 @@
+<main class="container py-4">
+  <div class="help-hero mb-4" style="background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color:#fff; border-radius:1rem; padding:2.25rem;">
+    <h2 class="fw-bold mb-1"><i class="bi bi-life-preserver"></i> Help Centre</h2>
+    <p class="opacity-75 mb-3">Find answers fast — browse guides, search FAQs, or use quick tools to manage your shopping.</p>
+    <div class="input-group input-group-lg" style="max-width:620px;">
+      <span class="input-group-text bg-white"><i class="bi bi-search text-primary"></i></span>
+      <input type="text" class="form-control" placeholder="Search help (e.g. track order, coupon, return, payment)..." [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)">
+    </div>
+  </div>
+
+  @if (searchQuery().trim()) {
+    <div class="mb-4">
+      <h5 class="fw-bold mb-3">Search Results ({{ articleHits().length + faqHits().length }})</h5>
+      <div class="list-group">
+        @for (a of articleHits(); track a.id) {
+          <button class="list-group-item list-group-item-action" (click)="openGuide(a)">
+            <i class="bi" [class]="'bi-' + a.icon" [class.text-primary]="a.color==='primary'" [class.text-danger]="a.color==='danger'" [class.text-success]="a.color==='success'" [class.text-info]="a.color==='info'" [class.text-warning]="a.color==='warning'" [class.text-secondary]="a.color==='secondary'"></i>
+            <strong>{{ a.title }}</strong> — <span class="text-muted">{{ a.summary }}</span>
+            <span class="badge bg-light text-dark float-end">Article</span>
+          </button>
+        }
+        @for (f of faqHits(); track f.q) {
+          <div class="list-group-item">
+            <i class="bi bi-question-circle text-primary"></i> <strong>{{ f.q }}</strong>
+            <div class="small text-muted mt-1" [innerHTML]="f.a"></div>
+            <span class="badge bg-light text-dark">FAQ</span>
+          </div>
+        }
+        @if (!articleHits().length && !faqHits().length) {
+          <div class="list-group-item text-center text-muted py-4">
+            <i class="bi bi-search fs-3 d-block mb-2"></i>No results for "<strong>{{ searchQuery() }}</strong>". Try different keywords or <a href="mailto:support@shopease.com">contact support</a>.
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div>
+      <h5 class="fw-bold mb-3"><i class="bi bi-tools"></i> Quick Self-Service</h5>
+      <div class="row g-3 mb-5">
+        @for (t of tools; track t.title) {
+          <div class="col-6 col-md-4 col-lg-2">
+            <a [routerLink]="t.link" class="text-decoration-none text-dark">
+              <div class="card text-center p-3" style="cursor:pointer">
+                <div class="mx-auto mb-2 d-flex align-items-center justify-content-center" style="width:46px;height:46px;border-radius:10px;"
+                     [class]="'bg-' + t.color + ' bg-opacity-10 text-' + t.color">
+                  <i class="bi" [class]="'bi-' + t.icon"></i>
+                </div>
+                <div class="fw-semibold small">{{ t.title }}</div>
+              </div>
+            </a>
+          </div>
+        }
+      </div>
+
+      <h5 class="fw-bold mb-3"><i class="bi bi-book"></i> Help Articles</h5>
+      <div class="row g-3 mb-5">
+        @for (a of articles; track a.id) {
+          <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="card h-100" style="cursor:pointer" (click)="openGuide(a)">
+              <div class="card-body d-flex gap-3">
+                <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width:46px;height:46px;border-radius:10px;" [class]="'bg-' + a.color + ' bg-opacity-10 text-' + a.color">
+                  <i class="bi" [class]="'bi-' + a.icon"></i>
+                </div>
+                <div><h6 class="fw-bold mb-1">{{ a.title }}</h6><p class="text-muted small mb-0">{{ a.summary }}</p></div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <h5 class="fw-bold mb-3"><i class="bi bi-question-circle"></i> Frequently Asked Questions</h5>
+          <div class="accordion">
+            @for (f of faqs; track f.q; let i = $index) {
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" [attr.data-bs-target]="'#faq-' + i">{{ f.q }}</button>
+                </h2>
+                <div [id]="'faq-' + i" class="accordion-collapse collapse">
+                  <div class="accordion-body small" [innerHTML]="f.a"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <h5 class="fw-bold mb-3"><i class="bi bi-headset"></i> Still need help?</h5>
+          <div class="card">
+            <div class="list-group list-group-flush">
+              <div class="list-group-item"><i class="bi bi-envelope text-primary"></i> <strong>Email us</strong><br><a href="mailto:support@shopease.com">support&#64;shopease.com</a></div>
+              <div class="list-group-item"><i class="bi bi-telephone text-primary"></i> <strong>Call us</strong><br>+91 98765 43210 (Mon–Sat, 9am–8pm)</div>
+              <div class="list-group-item"><i class="bi bi-chat-dots text-primary"></i> <strong>Live Chat</strong><br>Chat with us during business hours</div>
+              <div class="list-group-item"><i class="bi bi-whatsapp text-success"></i> <strong>WhatsApp</strong><br>+91 98765 43210</div>
+            </div>
+          </div>
+          <a href="mailto:support@shopease.com" class="btn btn-shopease w-100 mt-3"><i class="bi bi-send"></i> Contact Support</a>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Guide Modal -->
+  <div class="modal fade" tabindex="-1" #guideModalEl>
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        @if (selectedArticle(); as a) {
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi" [class]="'bi-' + a.icon"></i> {{ a.title }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted">{{ a.summary }}</p>
+            <h6 class="fw-bold">How to</h6>
+            <ol class="ps-3">
+              @for (step of a.steps; track step) { <li class="mb-2" [innerHTML]="step"></li> }
+            </ol>
+          </div>
+          <div class="modal-footer">
+            <a [routerLink]="a.link" class="btn btn-outline-primary" data-bs-dismiss="modal"><i class="bi bi-box-arrow-up-right"></i> Go there</a>
+            <button class="btn btn-shopease" data-bs-dismiss="modal">Got it</button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,191 @@
+<main class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/home">Home</a></li>
+      <li class="breadcrumb-item active">My Orders</li>
+    </ol>
+  </nav>
+
+  <h2 class="mb-4"><i class="bi bi-bag text-primary"></i> My Orders</h2>
+
+  <!-- Filters -->
+  <div class="filter-panel">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Status</label>
+        <select class="form-select" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
+          <option value="">All</option>
+          @for (s of statuses(); track s.id) { <option [value]="s.name">{{ s.name }}</option> }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">From Date</label>
+        <input type="date" class="form-control" [ngModel]="filterFrom()" (ngModelChange)="filterFrom.set($event)">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">To Date</label>
+        <input type="date" class="form-control" [ngModel]="filterTo()" (ngModelChange)="filterTo.set($event)">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Min Amount</label>
+        <input type="number" class="form-control" placeholder="0" [ngModel]="filterMin()" (ngModelChange)="filterMin.set($event)">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Max Amount</label>
+        <input type="number" class="form-control" placeholder="Any" [ngModel]="filterMax()" (ngModelChange)="filterMax.set($event)">
+      </div>
+      <div class="col-md-1">
+        <button class="btn btn-shopease w-100" (click)="page.set(1); applyFilters()">Apply</button>
+      </div>
+      <div class="col-md-1">
+        <button class="btn btn-clear-filter w-100" (click)="clearFilters()"><i class="bi bi-x-circle"></i></button>
+      </div>
+    </div>
+  </div>
+
+  @if (!paged().items.length) {
+    <div class="empty-state">
+      <div class="empty-icon"><i class="bi bi-bag-x"></i></div>
+      <h5>No orders found</h5>
+      <p>You haven't placed any orders yet.</p>
+      <a routerLink="/catalog" class="btn btn-shopease mt-2"><i class="bi bi-grid"></i> Start Shopping</a>
+    </div>
+  }
+
+  @for (order of paged().items; track order.id) {
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-3">
+            <small class="text-muted">Order Number</small>
+            <h6 class="mb-0 fw-bold">{{ order.orderNumber }}</h6>
+          </div>
+          <div class="col-md-2"><small class="text-muted">Date</small><p class="mb-0">{{ formatDate(order.createdAt) }}</p></div>
+          <div class="col-md-1"><small class="text-muted">Items</small><p class="mb-0">{{ order.items.length }}</p></div>
+          <div class="col-md-2"><small class="text-muted">Total</small><p class="mb-0 fw-bold text-primary">₹{{ order.total | number:'1.2-2' }}</p></div>
+          <div class="col-md-1"><span class="badge" [class]="statusBadgeClass(order.status)">{{ order.status }}</span></div>
+          <div class="col-md-3">
+            <div class="d-flex flex-wrap gap-1 justify-content-md-end">
+              <button class="btn btn-outline-primary btn-sm" (click)="viewOrder(order)"><i class="bi bi-eye"></i> Details</button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="invoice(order)"><i class="bi bi-file-earmark-pdf"></i> Invoice</button>
+              @if (order.status === 'Pending') { <button class="btn btn-outline-danger btn-sm" (click)="openTerms('cancel', order.id)"><i class="bi bi-x-circle"></i> Cancel</button> }
+              @if (order.status === 'Delivered') { <button class="btn btn-outline-warning btn-sm" (click)="openTerms('return', order.id)"><i class="bi bi-arrow-return-left"></i> Return</button> }
+              @if (order.status === 'Delivered' || order.status === 'Cancelled' || order.status === 'Returned') {
+                <button class="btn btn-outline-success btn-sm" (click)="reorder(order)"><i class="bi bi-arrow-repeat"></i> Reorder</button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (paged().totalPages > 1) {
+    <div class="mt-4">
+      <app-pagination [page]="paged()" (pageChange)="goToPage($event)" />
+    </div>
+  }
+
+  <!-- Terms Modal -->
+  <div class="modal fade" tabindex="-1" data-bs-backdrop="static" #termsModalEl>
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            @if (termsType() === 'cancel') { <i class="bi bi-x-octagon"></i> Cancel Order — Terms & Conditions }
+            @else { <i class="bi bi-arrow-return-left"></i> Return Order — Terms & Conditions }
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="border rounded p-3 mb-3 bg-light" style="max-height: 300px; overflow-y: auto; font-size: .875rem;" [innerHTML]="termsBody"></div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="terms-agree" [ngModel]="termsAgreed()" (ngModelChange)="termsAgreed.set($event)">
+            <label class="form-check-label" for="terms-agree">I have read and <strong>agree</strong> to the above terms &amp; conditions.</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-shopease" [disabled]="!termsAgreed()" (click)="confirmTermsAction()"><i class="bi bi-check-lg"></i> Agree &amp; Proceed</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Detail Modal -->
+  <div class="modal fade" tabindex="-1" #orderModalEl>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Order Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          @if (selectedOrder(); as order) {
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h5 class="mb-0">{{ order.orderNumber }}</h5>
+                <small class="text-muted">Placed on {{ formatDateTime(order.createdAt) }}</small>
+              </div>
+              <span class="badge fs-6" [class]="statusBadgeClass(order.status)">{{ order.status }}</span>
+            </div>
+
+            <div class="order-timeline mb-4">
+              @for (step of timelineSteps(); track step.label) {
+                <div class="timeline-step" [class]="step.cls">
+                  <div class="step-dot"><i class="bi" [class]="'bi-' + step.icon"></i></div>
+                  <div class="step-label">{{ step.label }}</div>
+                </div>
+              }
+            </div>
+            @if (order.status === 'Returned') {
+              <div class="alert alert-dark py-2 small mb-4"><i class="bi bi-arrow-return-left"></i> This order was returned. Refund is being processed.</div>
+            }
+
+            <h6 class="fw-bold">Items</h6>
+            <div class="table-responsive mb-3">
+              <table class="table table-sm">
+                <thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr></thead>
+                <tbody>
+                  @for (item of order.items; track item.productId) {
+                    <tr>
+                      <td>{{ item.name }} <small class="text-muted">({{ item.brand }})</small></td>
+                      <td>₹{{ item.price | number:'1.2-2' }}</td>
+                      <td>{{ item.quantity }}</td>
+                      <td>₹{{ item.subtotal | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="fw-bold">Delivery Address</h6>
+                <p class="small">{{ order.address.label }}: {{ order.address.line }}, {{ order.address.city }}, {{ order.address.state }} - {{ order.address.postalCode }}</p>
+
+                @if (selectedPayment(); as payment) {
+                  <h6 class="fw-bold">Payment</h6>
+                  <p class="small">
+                    Method: {{ payment.method }}<br>
+                    Status: <span class="badge" [class]="statusBadgeClass(payment.status)">{{ payment.status }}</span><br>
+                    @if (payment.transactionId) { Txn: {{ payment.transactionId }} }
+                  </p>
+                }
+              </div>
+              <div class="col-md-6">
+                <div class="bg-light p-3 rounded">
+                  <div class="d-flex justify-content-between"><span>Subtotal</span><span>₹{{ order.subtotal | number:'1.2-2' }}</span></div>
+                  <div class="d-flex justify-content-between"><span>Tax</span><span>₹{{ order.tax | number:'1.2-2' }}</span></div>
+                  <div class="d-flex justify-content-between"><span>Shipping</span><span>{{ order.shipping === 0 ? 'FREE' : ('₹' + (order.shipping | number:'1.2-2')) }}</span></div>
+                  <hr>
+                  <div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span class="text-primary">₹{{ order.total | number:'1.2-2' }}</span></div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,27 @@
+# .dockerignore applies ONLY to its own build context directory.
+# The context here is ./Backend, so this file must live here — a
+# .dockerignore at the repo root is never read for this build.
+
+# Host build output. obj/project.assets.json records Windows NuGet
+# paths; copying it into a Linux image breaks `dotnet publish` with
+# "Unable to find fallback package folder 'C:\Program Files...'".
+**/bin
+**/obj
+
+# Editor / OS noise
+**/.vs
+**/.vscode
+**/.idea
+**/*.user
+**/*.suo
+
+# Docker's own files
+Dockerfile
+.dockerignore
+
+# Backups created before containerising
+**/*.bak
+
+# Local secrets are injected at runtime, never baked into an image
+**/appsettings.*.local.json
+**/*.pfx

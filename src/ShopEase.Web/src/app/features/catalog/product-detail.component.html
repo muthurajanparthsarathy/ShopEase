@@ -1,0 +1,126 @@
+<main class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/catalog">Catalog</a></li>
+      <li class="breadcrumb-item active">{{ product()?.name ?? 'Product' }}</li>
+    </ol>
+  </nav>
+
+  @if (product() === undefined) {
+    <p class="text-muted">Loading…</p>
+  } @else if (product() === null) {
+    <div class="empty-state">
+      <div class="empty-icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <h5>Product not found</h5>
+      <a routerLink="/catalog" class="btn btn-shopease mt-3">Back to Catalog</a>
+    </div>
+  } @else {
+    <div class="row g-4">
+      <div class="col-md-5">
+        <div class="product-placeholder rounded" style="height:350px;font-size:5rem;"><i class="bi bi-box-seam"></i></div>
+      </div>
+      <div class="col-md-7">
+        <span class="badge bg-light text-dark mb-2">{{ category()?.name ?? '—' }}</span>
+        <h2 class="fw-bold">{{ product()!.name }}</h2>
+        <div class="rating-row mb-2">
+          <app-star-rating [rating]="stats().avg" />
+          <span class="rating-count">{{ stats().avg }} ({{ stats().count }} review{{ stats().count === 1 ? '' : 's' }})</span>
+        </div>
+        <p class="text-muted mb-1">Brand: <strong>{{ product()!.brand }}</strong></p>
+        <p class="text-muted mb-3">SKU: <code>{{ product()!.sku }}</code></p>
+        <h3 class="text-primary fw-bold mb-3">₹{{ product()!.price | number:'1.2-2' }}</h3>
+        <div class="mb-3">
+          @if (product()!.stock > 0) { <span class="badge bg-success fs-6">In Stock ({{ product()!.stock }})</span> } @else { <span class="badge bg-danger fs-6">Out of Stock</span> }
+        </div>
+        <p class="mb-4">{{ product()!.description }}</p>
+
+        <div class="d-flex gap-3 align-items-center mb-4">
+          <label class="fw-semibold">Qty:</label>
+          <div class="quantity-control">
+            <button type="button" (click)="decrementQty()">−</button>
+            <input type="number" [ngModel]="quantity()" (ngModelChange)="quantity.set($event)" min="1" [max]="product()!.stock">
+            <button type="button" (click)="incrementQty()">+</button>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 flex-wrap">
+          <button class="btn btn-add-cart btn-lg" [disabled]="product()!.stock <= 0" (click)="addToCart()"><i class="bi bi-cart-plus"></i> Add to Cart</button>
+          <button class="btn btn-outline-danger btn-lg" (click)="toggleWishlist()">
+            <i class="bi" [class.bi-heart-fill]="wishlistStore.has(product()!.id)" [class.bi-heart]="!wishlistStore.has(product()!.id)"></i>
+            {{ wishlistStore.has(product()!.id) ? 'In Wishlist' : 'Add to Wishlist' }}
+          </button>
+          <a routerLink="/catalog" class="btn btn-outline-secondary btn-lg"><i class="bi bi-arrow-left"></i> Continue Shopping</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="mt-5">
+      <h4 class="fw-bold mb-3"><i class="bi bi-chat-left-quote text-primary"></i> Ratings &amp; Reviews</h4>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card text-center p-3">
+            <div class="display-5 fw-bold">{{ stats().avg || '0.0' }}</div>
+            <div class="mb-1"><app-star-rating [rating]="stats().avg" /></div>
+            <div class="text-muted small">{{ stats().count }} review{{ stats().count === 1 ? '' : 's' }}</div>
+          </div>
+
+          @if (alreadyReviewed()) {
+            <p class="text-muted small mt-3"><i class="bi bi-check-circle"></i> You've reviewed this product.</p>
+          } @else {
+            <div class="card p-3 mt-3">
+              <h6 class="fw-bold">Write a Review</h6>
+              <div class="star-input mb-2">
+                @for (n of [1,2,3,4,5]; track n) {
+                  <i class="bi" [class.bi-star-fill]="n <= selectedRating()" [class.bi-star]="n > selectedRating()" (click)="setRating(n)"></i>
+                }
+              </div>
+              <textarea class="form-control form-control-sm mb-2" rows="2" placeholder="Share your experience..." [ngModel]="reviewComment()" (ngModelChange)="reviewComment.set($event)"></textarea>
+              <button class="btn btn-shopease btn-sm" (click)="submitReview()"><i class="bi bi-send"></i> Submit Review</button>
+            </div>
+          }
+        </div>
+        <div class="col-md-8">
+          @if (!reviews().length) {
+            <p class="text-muted">No reviews yet. Be the first to review!</p>
+          }
+          @for (r of reviews(); track r.id) {
+            <div class="border-bottom pb-2 mb-2">
+              <div class="d-flex justify-content-between">
+                <strong>{{ r.userName }}</strong>
+                <span class="small text-muted">{{ formatDate(r.createdAt) }}</span>
+              </div>
+              <div class="rating-row mb-1"><app-star-rating [rating]="r.rating" /></div>
+              <p class="mb-0 small">{{ r.comment || 'No comment.' }}</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Related products -->
+    @if (related().length) {
+      <div class="mt-5">
+        <h4 class="fw-bold mb-3"><i class="bi bi-collection text-primary"></i> Related Products</h4>
+        <div class="row g-4">
+          @for (p of related(); track p.id) {
+            <div class="col-6 col-md-3">
+              <div class="card card-product h-100">
+                <div class="product-placeholder"><i class="bi bi-box-seam"></i></div>
+                <div class="card-body d-flex flex-column">
+                  <span class="product-brand">{{ p.brand }}</span>
+                  <h6 class="card-title mt-1">{{ p.name }}</h6>
+                  <div class="rating-row mb-1"><app-star-rating [rating]="p.stats.avg" /> <span class="rating-count">({{ p.stats.count }})</span></div>
+                  <div class="mt-auto">
+                    <div class="product-price mb-2">₹{{ p.price | number:'1.2-2' }}</div>
+                    <a [routerLink]="['/catalog', p.id]" class="btn btn-outline-primary btn-sm d-block"><i class="bi bi-eye"></i> View</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</main>

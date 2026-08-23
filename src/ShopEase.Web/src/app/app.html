@@ -1,0 +1,15 @@
+@if (showChrome()) {
+  <app-navbar />
+  @if (isAdminArea()) {
+    <app-admin-ribbon />
+  }
+}
+
+<router-outlet />
+
+@if (showChrome()) {
+  <app-footer />
+}
+
+<app-toast-host />
+<app-loader-overlay />

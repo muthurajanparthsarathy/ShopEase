@@ -1,0 +1,157 @@
+<main class="container-fluid py-4 px-4">
+  @if (!currentKey()) {
+    <!-- Report Centre -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+      <h2 class="mb-0"><i class="bi bi-clipboard-data text-primary"></i> Report Centre</h2>
+    </div>
+    <p class="text-muted mb-3">Browse reports by category, or search for a specific report.</p>
+
+    <div class="input-group mb-4" style="max-width:460px;">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
+      <input type="text" class="form-control" placeholder="Search reports..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
+    </div>
+
+    @if (!anyMatch()) {
+      <div class="empty-state"><div class="empty-icon"><i class="bi bi-search"></i></div><h5>No reports match your search</h5></div>
+    }
+    @for (cat of catalog; track cat.name) {
+      @if (matchingReports(cat).length) {
+        <div class="mb-4">
+          <div class="mb-2" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.6px;color:var(--se-text-secondary);font-weight:700;"><i class="bi" [class]="'bi-' + cat.icon"></i> {{ cat.name }}</div>
+          <div class="row g-3">
+            @for (r of matchingReports(cat); track r.key) {
+              <div class="col-md-6 col-xl-4">
+                <div class="p-3 h-100 d-flex gap-3 align-items-start" style="cursor:pointer;border:1px solid var(--se-border);border-radius:10px;" (click)="openReport(r)">
+                  <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width:42px;height:42px;border-radius:10px;" [class]="'bg-' + cat.color + ' bg-opacity-10 text-' + cat.color">
+                    <i class="bi" [class]="'bi-' + r.icon"></i>
+                  </div>
+                  <div><div class="fw-semibold">{{ r.name }}</div><div class="text-muted small">{{ r.desc }}</div></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  } @else {
+    <!-- Report Viewer -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary btn-sm" (click)="backToCentre()"><i class="bi bi-arrow-left"></i> Report Centre</button>
+        <h4 class="mb-0 ms-1">{{ currentMeta()?.name }}</h4>
+      </div>
+      @if (currentReport()) {
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary btn-sm" (click)="exportCsv()"><i class="bi bi-filetype-csv"></i> CSV</button>
+          <button class="btn btn-outline-secondary btn-sm" (click)="exportTxt()"><i class="bi bi-file-earmark-text"></i> Text</button>
+          <button class="btn btn-outline-info btn-sm" (click)="print()"><i class="bi bi-printer"></i> Print</button>
+        </div>
+      }
+    </div>
+
+    <div class="filter-panel mb-3">
+      <h6 class="fw-bold mb-2"><i class="bi bi-funnel"></i> Filters</h6>
+      <div class="row g-3 align-items-end">
+        @if (currentKey() === 'sales' || currentKey() === 'orders' || currentKey() === 'payments') {
+          <div class="col-md-3"><label class="form-label">From Date</label><input type="date" class="form-control" [ngModel]="filterFrom()" (ngModelChange)="filterFrom.set($event)"></div>
+          <div class="col-md-3"><label class="form-label">To Date</label><input type="date" class="form-control" [ngModel]="filterTo()" (ngModelChange)="filterTo.set($event)"></div>
+        }
+        @if (currentKey() === 'orders') {
+          <div class="col-md-3">
+            <label class="form-label">Order Status</label>
+            <select class="form-select" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
+              <option value="">All</option>
+              @for (s of orderStatuses(); track s.id) { <option [value]="s.name">{{ s.name }}</option> }
+            </select>
+          </div>
+        }
+        @if (currentKey() === 'payments') {
+          <div class="col-md-3">
+            <label class="form-label">Payment Status</label>
+            <select class="form-select" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
+              <option value="">All</option>
+              @for (s of paymentStatuses(); track s.id) { <option [value]="s.name">{{ s.name }}</option> }
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Method</label>
+            <select class="form-select" [ngModel]="filterMethod()" (ngModelChange)="filterMethod.set($event)">
+              <option value="">All</option>
+              @for (m of paymentMethods(); track m.id) { <option [value]="m.name">{{ m.name }}</option> }
+            </select>
+          </div>
+        }
+        @if (currentKey() === 'inventory') {
+          <div class="col-md-3">
+            <label class="form-label">Category</label>
+            <select class="form-select" [ngModel]="filterCategoryId()" (ngModelChange)="filterCategoryId.set($event)">
+              <option value="">All</option>
+              @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Stock Status</label>
+            <select class="form-select" [ngModel]="filterStockStatus()" (ngModelChange)="filterStockStatus.set($event)">
+              <option value="">All</option><option value="instock">In Stock</option><option value="outofstock">Out of Stock</option>
+            </select>
+          </div>
+        }
+        @if (currentKey() === 'customers') {
+          <div class="col-md-3">
+            <label class="form-label">Account Status</label>
+            <select class="form-select" [ngModel]="filterUserStatus()" (ngModelChange)="filterUserStatus.set($event)">
+              <option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option>
+            </select>
+          </div>
+        }
+        @if (currentKey() === 'sales' || currentKey() === 'orders' || currentKey() === 'payments' || currentKey() === 'inventory') {
+          <div class="col-md-2"><label class="form-label">Min ₹</label><input type="number" class="form-control" [ngModel]="filterMin()" (ngModelChange)="filterMin.set($event)"></div>
+          <div class="col-md-2"><label class="form-label">Max ₹</label><input type="number" class="form-control" [ngModel]="filterMax()" (ngModelChange)="filterMax.set($event)"></div>
+        }
+      </div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-shopease" (click)="runReport()"><i class="bi bi-play-fill"></i> Run Report</button>
+        <button class="btn btn-clear-filter" (click)="clearFilters()"><i class="bi bi-x-circle"></i> Clear Filter</button>
+      </div>
+    </div>
+
+    @if (!currentReport()) {
+      <div class="text-center py-5 text-muted"><i class="bi bi-play-circle fs-1"></i><p class="mt-2">Configure filters and click <strong>Run Report</strong>.</p></div>
+    } @else if (currentReport(); as report) {
+      <div class="mb-3">
+        <div class="row g-3">
+          @for (entry of summaryEntries(); track entry.key) {
+            <div class="col-sm-6 col-xl-3"><div class="kpi-card"><div class="kpi-label">{{ entry.label }}</div><div class="kpi-value">{{ entry.display }}</div></div></div>
+          }
+        </div>
+      </div>
+
+      @if (!report.rows.length) {
+        <div class="text-center py-5"><i class="bi bi-clipboard-x fs-1 text-muted"></i><h5 class="text-muted mt-2">No data found for the selected filters.</h5></div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover table-striped table-sm">
+            <thead class="table-dark"><tr>@for (h of report.headers; track h) { <th>{{ h }}</th> }</tr></thead>
+            <tbody>
+              @for (row of pagedRows().items; track $index) {
+                <tr>
+                  @for (cell of row; track $index) {
+                    <td>
+                      @if (isBadgeStatus(cell)) { <span class="badge" [class]="statusBadgeClass(cell.toString())">{{ cell }}</span> }
+                      @else { {{ cell }} }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (pagedRows().totalPages > 1) {
+          <div class="mt-2">
+            <app-pagination [page]="pagedRows()" (pageChange)="goToPage($event)" />
+          </div>
+        }
+      }
+    }
+  }
+</main>

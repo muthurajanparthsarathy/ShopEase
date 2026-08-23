@@ -1,0 +1,134 @@
+@if (placedOrder(); as order) {
+  <main class="container py-4">
+    <div class="text-center py-5">
+      <div style="font-size:5rem;color:var(--se-success);"><i class="bi bi-check-circle-fill"></i></div>
+      <h2 class="fw-bold mt-3">Order Placed Successfully!</h2>
+      <p class="text-muted fs-5">Order Number: <strong>{{ order.orderNumber }}</strong></p>
+      <p class="text-muted">Total: <strong>₹{{ order.total | number:'1.2-2' }}</strong></p>
+      <p class="text-muted">Estimated delivery: 3-5 business days</p>
+      <div class="d-flex gap-3 justify-content-center mt-4">
+        <a routerLink="/orders" class="btn btn-shopease btn-lg"><i class="bi bi-bag"></i> View My Orders</a>
+        <a routerLink="/catalog" class="btn btn-outline-primary btn-lg"><i class="bi bi-grid"></i> Continue Shopping</a>
+      </div>
+    </div>
+  </main>
+} @else {
+  <main class="container py-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/cart">Cart</a></li>
+        <li class="breadcrumb-item active">Checkout</li>
+      </ol>
+    </nav>
+
+    <h2 class="mb-4"><i class="bi bi-bag-check text-primary"></i> Checkout</h2>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <!-- Step 1: Address -->
+        <div class="card mb-4">
+          <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-geo-alt text-primary"></i> 1. Delivery Address</h5></div>
+          <div class="card-body">
+            @if (!addresses().length) {
+              <p class="text-danger">No saved addresses. <a routerLink="/profile">Add an address</a> first.</p>
+            } @else {
+              @for (a of addresses(); track a.id) {
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="radio" name="address" [id]="'addr-' + a.id" [checked]="selectedAddressId() === a.id" (change)="selectedAddressId.set(a.id)">
+                  <label class="form-check-label" [for]="'addr-' + a.id"><strong>{{ a.label }}</strong> — {{ a.line }}, {{ a.city }}, {{ a.state }} - {{ a.postalCode }}</label>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Step 2: Payment -->
+        <div class="card mb-4">
+          <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-credit-card text-primary"></i> 2. Payment Method</h5></div>
+          <div class="card-body">
+            <div class="mb-3">
+              @for (m of paymentMethods(); track m.id) {
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="radio" name="paymentMethod" [id]="'pay-' + m.id" [checked]="selectedMethod()?.id === m.id" (change)="selectedMethod.set(m)">
+                  <label class="form-check-label fw-semibold" [for]="'pay-' + m.id"><i class="bi" [class]="'bi-' + methodIcon(m.name)"></i> {{ m.name }}</label>
+                </div>
+              }
+            </div>
+
+            <div class="alert alert-info py-2 small mb-3">
+              <i class="bi bi-info-circle-fill"></i> Fields marked with <span class="text-danger fw-bold">*</span> are mandatory for the selected payment method.
+            </div>
+
+            @if (selectedMethod(); as m) {
+              @if (formTypeFor(m.name) === 'card') {
+                <div class="border rounded p-3 mt-3" [formGroup]="cardForm">
+                  <div class="row g-3">
+                    <div class="col-12">
+                      <label class="form-label">Card Number <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" formControlName="cardNumber" (ngModelChange)="onCardNumberInput($event)"
+                             [class.is-invalid]="submitted() && cardForm.controls.cardNumber.invalid">
+                      <div class="invalid-feedback">{{ cardErrorFor('cardNumber') }}</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Cardholder Name <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" placeholder="Name on card" formControlName="cardHolder" [class.is-invalid]="submitted() && cardForm.controls.cardHolder.invalid">
+                      <div class="invalid-feedback">{{ cardErrorFor('cardHolder') }}</div>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Expiry <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" placeholder="MM/YY" maxlength="5" formControlName="expiry" [class.is-invalid]="submitted() && cardForm.controls.expiry.invalid">
+                      <div class="invalid-feedback">{{ cardErrorFor('expiry') }}</div>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">CVV <span class="text-danger">*</span></label>
+                      <input type="password" class="form-control" placeholder="***" maxlength="3" formControlName="cvv" [class.is-invalid]="submitted() && cardForm.controls.cvv.invalid">
+                      <div class="invalid-feedback">{{ cardErrorFor('cvv') }}</div>
+                    </div>
+                  </div>
+                </div>
+              } @else if (formTypeFor(m.name) === 'upi') {
+                <div class="border rounded p-3 mt-3" [formGroup]="upiForm">
+                  <label class="form-label">UPI ID <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" placeholder="yourname@bank" formControlName="upiId" [class.is-invalid]="submitted() && upiForm.controls.upiId.invalid">
+                  <div class="invalid-feedback">{{ upiErrorFor('upiId') }}</div>
+                </div>
+              } @else if (formTypeFor(m.name) === 'cod') {
+                <div class="border rounded p-3 mt-3">
+                  <p class="mb-0 text-muted"><i class="bi bi-info-circle"></i> Pay with cash when your order is delivered. No additional charges.</p>
+                </div>
+              } @else {
+                <div class="border rounded p-3 mt-3">
+                  <p class="mb-0 text-muted"><i class="bi bi-info-circle"></i> You'll complete the payment using {{ m.name }}.</p>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="col-lg-4">
+        <div class="cart-summary">
+          <h5 class="fw-bold mb-3"><i class="bi bi-receipt"></i> Order Summary</h5>
+          @for (item of cartStore.summary().items; track item.productId) {
+            <div class="d-flex justify-content-between mb-2">
+              <span class="small">{{ item.name }} x{{ item.quantity }}</span>
+              <span class="small fw-semibold">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+            </div>
+          }
+          <hr>
+          <div class="summary-row"><span>Subtotal</span><span>₹{{ cartStore.summary().subtotal | number:'1.2-2' }}</span></div>
+          @if (cartStore.summary().discount > 0) {
+            <div class="summary-row text-success"><span>Discount{{ cartStore.summary().coupon ? ' (' + cartStore.summary().coupon + ')' : '' }}</span><span>− ₹{{ cartStore.summary().discount | number:'1.2-2' }}</span></div>
+          }
+          <div class="summary-row"><span>Tax (18% GST)</span><span>₹{{ cartStore.summary().tax | number:'1.2-2' }}</span></div>
+          <div class="summary-row"><span>Shipping</span><span>@if (cartStore.summary().shipping === 0) { <span class="text-success">FREE</span> } @else { ₹{{ cartStore.summary().shipping | number:'1.2-2' }} }</span></div>
+          <div class="summary-row total"><span>Total</span><span>₹{{ cartStore.summary().total | number:'1.2-2' }}</span></div>
+          <div class="d-grid mt-3">
+            <button class="btn btn-shopease btn-lg" (click)="placeOrder()"><i class="bi bi-bag-check"></i> Place Order</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+}

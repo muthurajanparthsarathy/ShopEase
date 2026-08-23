@@ -1,0 +1,321 @@
+<main class="container-fluid py-4 px-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h2 class="mb-0"><i class="bi bi-hdd-stack text-primary"></i> Backup &amp; Recovery</h2>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-warning" (click)="openRestore()"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>
+      <button class="btn btn-shopease" (click)="openNewJob()"><i class="bi bi-plus-lg"></i> New Job</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="h-100" style="border-radius:var(--se-radius);padding:1.1rem 1.25rem;background:#fff;box-shadow:var(--se-shadow);border-left:4px solid var(--se-success);">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="text-uppercase small fw-bold text-muted mb-1" style="font-size:.78rem;">Last Backup</div>
+            @if (lastRunAt) { <span class="badge bg-success">Completed</span> } @else { <span class="text-muted">—</span> }
+            <div class="text-muted mt-1" style="font-size:.75rem">{{ lastRunAt ? formatDateTime(lastRunAt) : 'No backups yet' }}</div>
+          </div>
+          <i class="bi bi-cloud-check" style="font-size:1.6rem;color:var(--se-success);"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="h-100" style="border-radius:var(--se-radius);padding:1.1rem 1.25rem;background:#fff;box-shadow:var(--se-shadow);border-left:4px solid var(--se-primary);">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="text-uppercase small fw-bold text-muted mb-1" style="font-size:.78rem;">Active Jobs</div>
+            <div style="font-size:1.55rem;font-weight:700;">{{ activeJobsCount }}</div>
+            <div class="text-muted" style="font-size:.75rem">{{ jobs().length }} total job(s)</div>
+          </div>
+          <i class="bi bi-calendar-week" style="font-size:1.6rem;color:var(--se-primary);"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="h-100" style="border-radius:var(--se-radius);padding:1.1rem 1.25rem;background:#fff;box-shadow:var(--se-shadow);border-left:4px solid var(--se-info);">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="text-uppercase small fw-bold text-muted mb-1" style="font-size:.78rem;">Success Rate</div>
+            <div style="font-size:1.55rem;font-weight:700;">{{ successRate }}%</div>
+            <div class="text-muted" style="font-size:.75rem">{{ relevantActivity.length }} activities</div>
+          </div>
+          <i class="bi bi-graph-up-arrow" style="font-size:1.6rem;color:var(--se-info);"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="h-100" style="border-radius:var(--se-radius);padding:1.1rem 1.25rem;background:#fff;box-shadow:var(--se-shadow);border-left:4px solid var(--se-accent);">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="text-uppercase small fw-bold text-muted mb-1" style="font-size:.78rem;">Total Backups</div>
+            <div style="font-size:1.55rem;font-weight:700;">{{ totalBackups }}</div>
+            <div class="text-muted" style="font-size:.75rem">lifetime runs</div>
+          </div>
+          <i class="bi bi-hdd-stack" style="font-size:1.6rem;color:var(--se-accent);"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Scheduled Jobs -->
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-calendar-week text-primary"></i> Scheduled Jobs</h5>
+          <button class="btn btn-sm btn-shopease" (click)="openNewJob()"><i class="bi bi-plus-lg"></i> New Job</button>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr><th>Job</th><th>Type</th><th>Schedule</th><th>Next Run</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                @if (!jobs().length) {
+                  <tr><td colspan="6" class="text-center text-muted py-4">No backup jobs configured. Click <strong>New Job</strong> to create one.</td></tr>
+                }
+                @for (j of jobs(); track j.id) {
+                  <tr>
+                    <td>
+                      <div class="fw-semibold">{{ j.name }}</div>
+                      <div class="text-muted" style="font-size:.75rem"><i class="bi bi-hdd"></i> {{ j.source.length }} source(s)</div>
+                    </td>
+                    <td><span class="badge" [class]="typeBadge(j.type)">{{ j.type }}</span></td>
+                    <td>{{ j.schedule }}</td>
+                    <td><small>{{ j.active ? nextRunText(j) : '—' }}</small></td>
+                    <td><span class="badge" [class.bg-success]="j.active" [class.bg-secondary]="!j.active">{{ j.active ? 'Active' : 'Paused' }}</span></td>
+                    <td class="text-nowrap">
+                      <button class="btn btn-outline-success btn-sm" title="Run Now" (click)="runJob(j)"><i class="bi bi-play-fill"></i></button>
+                      <button class="btn btn-outline-secondary btn-sm" [title]="j.active ? 'Pause' : 'Resume'" (click)="toggleJob(j)"><i class="bi" [class.bi-pause-circle]="j.active" [class.bi-play-circle]="!j.active"></i></button>
+                      <button class="btn btn-outline-danger btn-sm" title="Delete" (click)="deleteJob(j)"><i class="bi bi-trash"></i></button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-activity text-primary"></i> Recent Activities</h5></div>
+        <div class="card-body" style="max-height:460px;overflow-y:auto;">
+          @if (!relevantActivity.length) {
+            <p class="text-muted text-center py-4 mb-0">No activity yet.</p>
+          }
+          @for (line of relevantActivity; track line) {
+            <div class="d-flex gap-3 py-2" style="border-bottom:1px solid var(--se-border);">
+              <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width:34px;height:34px;border-radius:50%;font-size:.95rem;" [class]="activityIcon(line).cls">
+                <i class="bi" [class]="'bi-' + activityIcon(line).icon"></i>
+              </div>
+              <div class="flex-grow-1">
+                <div class="small">{{ line.split(' — ').slice(1).join(' — ') }}</div>
+                <div class="text-muted" style="font-size:.72rem">{{ line.split(' — ')[0] }}</div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Export + Danger Zone -->
+  <div class="row g-4 mt-1">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header bg-success text-white"><h5 class="mb-0"><i class="bi bi-cloud-arrow-up"></i> Quick Export</h5></div>
+        <div class="card-body">
+          <p class="text-muted small">Download a one-off snapshot of selected data as a JSON file.</p>
+          <div class="row g-2 mb-3">
+            @for (it of [
+              { label: 'Users', key: 'Users', icon: 'people', color: 'primary' },
+              { label: 'Products', key: 'Products', icon: 'box-seam', color: 'success' },
+              { label: 'Categories', key: 'Categories', icon: 'tags', color: 'info' },
+              { label: 'Orders', key: 'Orders', icon: 'bag-check', color: 'warning' },
+              { label: 'Payments', key: 'Payments', icon: 'credit-card', color: 'danger' },
+              { label: 'Notifications', key: 'Notifications', icon: 'bell', color: 'secondary' }
+            ]; track it.key) {
+              <div class="col-6 col-md-4">
+                <div class="d-flex align-items-center gap-2 p-2 border rounded">
+                  <i class="bi fs-5" [class]="'bi-' + it.icon + ' text-' + it.color"></i>
+                  <div><div class="fw-bold small">{{ count(it.key) }}</div><div class="text-muted" style="font-size:.75rem">{{ it.label }}</div></div>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="row g-1 mb-3">
+            @for (k of mainEntities; track k) {
+              <div class="col-md-6">
+                <div class="form-check"><input class="form-check-input" type="checkbox" [id]="'chk-' + k" [(ngModel)]="exportChecks[k]"><label class="form-check-label" [for]="'chk-' + k">{{ entityMap[k] }}</label></div>
+              </div>
+            }
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-success" (click)="exportBackup()"><i class="bi bi-download"></i> Download Backup</button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="selectAllExport(true)">Select All</button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="selectAllExport(false)">Deselect All</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card h-100 border-danger">
+        <div class="card-header bg-danger text-white"><h5 class="mb-0"><i class="bi bi-exclamation-octagon"></i> Danger Zone</h5></div>
+        <div class="card-body d-flex flex-column">
+          <h6 class="mb-1">Reset All Data</h6>
+          <p class="text-muted small">Clear all ShopEase data and re-seed defaults. This cannot be undone.</p>
+          <button class="btn btn-outline-danger mt-auto align-self-start" (click)="resetAllData()"><i class="bi bi-trash"></i> Reset to Defaults</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Job Modal -->
+  <div class="modal fade" id="newJobModal" tabindex="-1" #newJobModalEl>
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-circle"></i> New Backup Job</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small"><i class="bi bi-info-circle-fill"></i> Define what to back up, where it goes, and how often. Fields marked with <span class="text-danger fw-bold">*</span> are mandatory.</div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Job Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" placeholder="e.g., Nightly Full Backup" [ngModel]="jobName()" (ngModelChange)="jobName.set($event)" [class.is-invalid]="jobSubmitted() && !jobName().trim()">
+              <div class="invalid-feedback">Please enter a job name.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Source — What to back up <span class="text-danger">*</span></label>
+              <div class="row g-1">
+                @for (k of mainEntities; track k) {
+                  <div class="col-md-4 col-6">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" [id]="'src-' + k" [(ngModel)]="jobSourceChecks[k]"><label class="form-check-label small" [for]="'src-' + k">{{ entityMap[k] }}</label></div>
+                  </div>
+                }
+              </div>
+              @if (jobSubmitted() && !mainEntities.some(k => jobSourceChecks[k])) {
+                <div class="invalid-feedback d-block">Select at least one data source.</div>
+              }
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Backup Type <span class="text-danger">*</span></label>
+              <select class="form-select" [ngModel]="jobType()" (ngModelChange)="jobType.set($event)">
+                <option value="Full">Full</option><option value="Incremental">Incremental</option><option value="Differential">Differential</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Schedule <span class="text-danger">*</span></label>
+              <select class="form-select" [ngModel]="jobSchedule()" (ngModelChange)="jobSchedule.set($event)">
+                <option value="Manual">Manual</option><option value="Hourly">Hourly</option><option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Monthly">Monthly</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Retention (keep last)</label>
+              <div class="input-group"><input type="number" class="form-control" min="1" [ngModel]="jobRetention()" (ngModelChange)="jobRetention.set($event)"><span class="input-group-text">backups</span></div>
+            </div>
+            <div class="col-12">
+              <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="job-active" [ngModel]="jobActive()" (ngModelChange)="jobActive.set($event)"><label class="form-check-label" for="job-active">Activate this job immediately</label></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-shopease" (click)="createJob()"><i class="bi bi-check-lg"></i> Create Job</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Restore Wizard Modal -->
+  <div class="modal fade" id="restoreModal" tabindex="-1" data-bs-backdrop="static" #restoreModalEl>
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-arrow-counterclockwise"></i> Restore Wizard</h5>
+          <button type="button" class="btn-close" (click)="closeRestore()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex mb-4">
+            @for (step of [[1,'Identify Backup'],[2,'Verify Integrity'],[3,'Scope & Target'],[4,'Execute']]; track step[0]) {
+              <div class="flex-fill text-center small position-relative" [class.fw-semibold]="rsStep() >= +step[0]" [class.text-muted]="rsStep() < +step[0]">
+                <div class="mx-auto mb-1 d-flex align-items-center justify-content-center rounded-circle text-white fw-semibold" style="width:30px;height:30px;"
+                     [style.background]="rsStep() === +step[0] ? 'var(--se-primary)' : (rsStep() > +step[0] ? 'var(--se-success)' : 'var(--se-border)')">{{ step[0] }}</div>
+                {{ step[1] }}
+              </div>
+            }
+          </div>
+
+          @if (rsStep() === 1) {
+            <h6 class="fw-bold">Step 1 — Identify the backup</h6>
+            <p class="text-muted small">Upload a ShopEase backup file (.json) to restore from.</p>
+            <input type="file" class="form-control" accept=".json" (change)="onRestoreFile($event)">
+            @if (rsFileError()) { <div class="alert alert-danger mt-3 py-2 small">{{ rsFileError() }}</div> }
+            @if (rsFileName() && !rsFileError()) { <div class="alert alert-secondary mt-3 py-2 small"><i class="bi bi-file-earmark-check"></i> Loaded <strong>{{ rsFileName() }}</strong> — {{ rsEntityCount }} entit{{ rsEntityCount === 1 ? 'y' : 'ies' }} found.</div> }
+          } @else if (rsStep() === 2) {
+            <h6 class="fw-bold">Step 2 — Verify integrity</h6>
+            <p class="text-muted small">We validate the file signature, structure, and contents before restoring.</p>
+            <ul class="list-group">
+              @for (c of rsChecks(); track c.label) {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{{ c.label }}</span>
+                  <i class="bi" [class.bi-check-circle-fill]="c.ok" [class.text-success]="c.ok" [class.bi-x-circle-fill]="!c.ok" [class.text-danger]="!c.ok"></i>
+                </li>
+              }
+              <li class="list-group-item fw-semibold" [class.list-group-item-success]="rsVerified()" [class.list-group-item-danger]="!rsVerified()">
+                @if (rsVerified()) { <i class="bi bi-shield-check"></i> Integrity check passed — safe to proceed. }
+                @else { <i class="bi bi-shield-x"></i> Integrity check failed — this file cannot be restored. }
+              </li>
+            </ul>
+          } @else if (rsStep() === 3) {
+            <h6 class="fw-bold">Step 3 — Choose scope &amp; target</h6>
+            <p class="text-muted small">Select which entities to restore and where to apply them.</p>
+            <div class="table-responsive mb-3">
+              <table class="table table-sm table-bordered">
+                <thead><tr><th>Entity</th><th class="text-center">In Backup</th><th class="text-center">Current</th><th class="text-center">Restore?</th></tr></thead>
+                <tbody>
+                  @for (k of rsScopeKeys(); track k) {
+                    <tr>
+                      <td>{{ entityMap[k] || k }} @if (!isRestorable(k)) { <span class="badge bg-secondary ms-1" style="font-size:.65rem">export-only</span> }</td>
+                      <td class="text-center">{{ rsBackupCount(k) }}</td>
+                      <td class="text-center">{{ count(k) }}</td>
+                      <td class="text-center"><input class="form-check-input" type="checkbox" [disabled]="!isRestorable(k)" [(ngModel)]="rsScope[k]"></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <label class="form-label fw-semibold">Target</label>
+            <div class="form-check"><input class="form-check-input" type="radio" name="rs-target" id="rs-target-staging" [checked]="rsTarget()==='staging'" (change)="rsTarget.set('staging')"><label class="form-check-label" for="rs-target-staging"><strong>Staging</strong> — dry run, validates and stages data without overwriting live data (safe)</label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="rs-target" id="rs-target-current" [checked]="rsTarget()==='current'" (change)="rsTarget.set('current')"><label class="form-check-label" for="rs-target-current"><strong>Production (Current)</strong> — overwrites live data. This cannot be undone.</label></div>
+          } @else if (rsStep() === 4) {
+            <h6 class="fw-bold">Step 4 — Execute the restore</h6>
+            <div class="mb-3">
+              <div class="alert py-2" [class.alert-warning]="rsTarget()==='current'" [class.alert-info]="rsTarget()!=='current'">
+                <div><strong>Target:</strong> {{ rsTarget() === 'current' ? 'Production (Current) — live data will be overwritten' : 'Staging — dry run, live data is preserved' }}</div>
+                <div><strong>Entities:</strong> {{ rsSelectedScope.length ? rsSelectedScope.join(', ') : 'None selected' }}</div>
+              </div>
+              @if (rsTarget() === 'current') { <p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle-fill"></i> This action cannot be undone.</p> }
+            </div>
+            @if (rsResult(); as r) {
+              <div class="alert mb-0" [class.alert-success]="r.ok" [class.alert-danger]="!r.ok">
+                <i class="bi" [class.bi-check-circle-fill]="r.ok" [class.bi-x-circle-fill]="!r.ok"></i> {{ r.message }}
+              </div>
+            }
+          }
+        </div>
+        <div class="modal-footer">
+          @if (rsStep() > 1) { <button class="btn btn-outline-secondary" (click)="goBack()"><i class="bi bi-arrow-left"></i> Back</button> }
+          <button class="btn btn-outline-danger" (click)="closeRestore()">Cancel</button>
+          @if (rsStep() < 4) { <button class="btn btn-shopease" [disabled]="!canGoNext()" (click)="goNext()">Next <i class="bi bi-arrow-right"></i></button> }
+          @if (rsStep() === 4) { <button class="btn btn-warning" (click)="executeRestore()"><i class="bi bi-play-fill"></i> Execute Restore</button> }
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

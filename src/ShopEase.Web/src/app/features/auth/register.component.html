@@ -1,0 +1,71 @@
+<div class="auth-wrapper">
+  <div class="auth-card" style="max-width:500px;">
+    <div class="text-center mb-4">
+      <h1 class="brand-title"><i class="bi bi-bag-heart-fill brand-icon"></i> ShopEase</h1>
+      <p class="brand-subtitle">Create your account to start shopping!</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="alert alert-info py-2 small mb-3">
+        <i class="bi bi-info-circle-fill"></i> Fields marked with <span class="text-danger fw-bold">*</span> are mandatory.
+      </div>
+
+      <div class="mb-3">
+        <label for="reg-name" class="form-label">Full Name <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="reg-name" placeholder="Enter your full name" formControlName="name"
+               [class.is-invalid]="submitted() && form.controls.name.invalid" [class.is-valid]="submitted() && form.controls.name.valid">
+        <div class="invalid-feedback">{{ errorFor('name') }}</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="reg-email" class="form-label">Email Address <span class="text-danger">*</span></label>
+        <input type="email" class="form-control" id="reg-email" placeholder="you@example.com" formControlName="email"
+               [class.is-invalid]="submitted() && form.controls.email.invalid" [class.is-valid]="submitted() && form.controls.email.valid">
+        <div class="invalid-feedback">{{ errorFor('email') }}</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="reg-phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+        <input type="tel" class="form-control" id="reg-phone" placeholder="9876543210" formControlName="phone"
+               [class.is-invalid]="submitted() && form.controls.phone.invalid" [class.is-valid]="submitted() && form.controls.phone.valid">
+        <div class="invalid-feedback">{{ errorFor('phone') }}</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="reg-password" class="form-label">Password <span class="text-danger">*</span></label>
+        <div class="input-group-password">
+          <input [type]="showPassword() ? 'text' : 'password'" class="form-control" id="reg-password" placeholder="Min 6 chars, upper, lower, digit, special" formControlName="password"
+                 [class.is-invalid]="submitted() && form.controls.password.invalid" [class.is-valid]="submitted() && form.controls.password.valid">
+          <span class="password-toggle" (click)="showPassword.set(!showPassword())">
+            <i class="bi" [class.bi-eye]="!showPassword()" [class.bi-eye-slash]="showPassword()"></i>
+          </span>
+          <div class="invalid-feedback">{{ errorFor('password') }}</div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="reg-confirm" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+        <div class="input-group-password">
+          <input [type]="showConfirm() ? 'text' : 'password'" class="form-control" id="reg-confirm" placeholder="Re-enter your password" formControlName="confirm"
+                 [class.is-invalid]="submitted() && form.controls.confirm.invalid" [class.is-valid]="submitted() && form.controls.confirm.valid">
+          <span class="password-toggle" (click)="showConfirm.set(!showConfirm())">
+            <i class="bi" [class.bi-eye]="!showConfirm()" [class.bi-eye-slash]="showConfirm()"></i>
+          </span>
+          <div class="invalid-feedback">{{ errorFor('confirm') }}</div>
+        </div>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="alert alert-danger">{{ errorMessage() }}</div>
+      }
+
+      <button type="submit" class="btn btn-shopease w-100 py-2 mb-3">
+        <i class="bi bi-person-plus"></i> Create Account
+      </button>
+
+      <p class="text-center text-muted mb-0">
+        Already have an account? <a routerLink="/login" class="text-primary fw-semibold">Sign In</a>
+      </p>
+    </form>
+  </div>
+</div>

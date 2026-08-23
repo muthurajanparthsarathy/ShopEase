@@ -1,0 +1,123 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.app-pagination {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+// ── Full numbered view ───────────────────────────────────────
+.app-pagination__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+}
+
+.app-pagination__list .page-item {
+  display: flex;
+}
+
+.app-pagination__list .page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 44px; // WCAG 2.5.5 target-size guidance — comfortably tappable
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-radius: var(--se-radius);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: var(--se-primary);
+  font-weight: 600;
+  background: #fff;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgba(37, 99, 235, 0.08);
+    border-color: var(--se-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--se-primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+.app-pagination__list .page-item.active .page-link {
+  background: var(--se-primary);
+  border-color: var(--se-primary);
+  color: #fff;
+  box-shadow: var(--se-shadow);
+}
+
+.app-pagination__ellipsis .page-link {
+  border: none;
+  background: transparent;
+  min-width: auto;
+  padding: 0 0.25rem;
+  cursor: default;
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.45);
+}
+
+// ── Compact "Page X of Y" view — hidden by default, shown only on very small screens ──
+.app-pagination__compact {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.app-pagination__status {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.75);
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+// ── Tablet / narrow: drop the Previous/Next text labels, keep icons + numbers ──
+@media (max-width: 767px) {
+  .app-pagination__list .app-pagination__nav-label {
+    display: none;
+  }
+
+  .app-pagination__list .page-link {
+    padding: 0 0.6rem;
+  }
+}
+
+// ── Very small screens: collapse to the compact "‹ Previous | Page X of Y | Next ›" view ──
+@media (max-width: 479px) {
+  .app-pagination__list--full {
+    display: none;
+  }
+
+  .app-pagination__compact {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-pagination__list .page-link {
+    transition: none;
+  }
+}

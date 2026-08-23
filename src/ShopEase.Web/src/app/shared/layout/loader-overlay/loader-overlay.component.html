@@ -1,0 +1,17 @@
+@if (loader.phase() !== 'hidden') {
+  <div class="se-loader-overlay" role="status" aria-live="polite">
+    <div class="se-loader-box">
+      @if (loader.phase() === 'anim') {
+        <div class="se-loader-anim">
+          <i class="bi bi-cart3 se-loader-cart"></i>
+          <div class="se-loader-dots"><span></span><span></span><span></span></div>
+        </div>
+      } @else {
+        <div class="se-loader-progress">
+          <div class="se-progress-track"><div class="se-progress-bar"></div></div>
+        </div>
+      }
+      <div class="se-loader-msg">{{ loader.message() }}</div>
+    </div>
+  </div>
+}

@@ -1,0 +1,162 @@
+<!-- Reusable nav-link list: rendered once into the desktop bar, once into the mobile panel -->
+<ng-template #navLinks>
+  @if (!isAdminArea()) {
+    <li><a routerLink="/home" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-house"></i> <span>Home</span></a></li>
+    <li><a routerLink="/catalog" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-grid"></i> <span>Catalog</span></a></li>
+    <li><a routerLink="/orders" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-bag"></i> <span>My Orders</span></a></li>
+    <li><a routerLink="/reports" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-bar-chart"></i> <span>Reports</span></a></li>
+  } @else {
+    <li><a routerLink="/admin/dashboard" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-speedometer2"></i> <span>Dashboard</span></a></li>
+    <li><a routerLink="/admin/products" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-box-seam"></i> <span>Products</span></a></li>
+    <li><a routerLink="/admin/categories" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-tags"></i> <span>Categories</span></a></li>
+    <li><a routerLink="/admin/orders" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-bag-check"></i> <span>Orders</span></a></li>
+    <li><a routerLink="/admin/customers" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-people"></i> <span>Users</span></a></li>
+    <li><a routerLink="/admin/reports" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-file-earmark-bar-graph"></i> <span>Reports</span></a></li>
+    <li><a routerLink="/admin/backup" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-cloud-arrow-down"></i> <span>Backup</span></a></li>
+    <li><a routerLink="/admin/dynamic" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-ui-checks-grid"></i> <span>Dynamic</span></a></li>
+    <li><a routerLink="/admin/cms" routerLinkActive="active" (click)="closeMobileMenu()"><i class="bi bi-layout-text-window-reverse"></i> <span>Content</span></a></li>
+  }
+</ng-template>
+
+<!-- Reusable icon cluster (wishlist/notifications/cart) — customer pages only -->
+<ng-template #quickIcons>
+  <li>
+    <a class="icon-link" routerLink="/wishlist" (click)="closeMobileMenu()" aria-label="Wishlist">
+      <span class="nav-icon-wrapper"><i class="bi bi-heart"></i><span class="badge bg-danger rounded-pill">{{ wishlist.count() || '' }}</span></span>
+      <span class="mobile-only-label">Wishlist</span>
+    </a>
+  </li>
+  <li>
+    <a class="icon-link" routerLink="/notifications" (click)="closeMobileMenu()" aria-label="Notifications">
+      <span class="nav-icon-wrapper"><i class="bi bi-bell"></i><span class="badge bg-danger rounded-pill">{{ notifications.unreadCount() || '' }}</span></span>
+      <span class="mobile-only-label">Notifications</span>
+    </a>
+  </li>
+  <li>
+    <a class="icon-link" routerLink="/cart" (click)="closeMobileMenu()" aria-label="Cart">
+      <span class="nav-icon-wrapper"><i class="bi bi-cart3"></i><span class="badge bg-danger rounded-pill">{{ cart.itemCount() || '' }}</span></span>
+      <span class="mobile-only-label">Cart</span>
+    </a>
+  </li>
+</ng-template>
+
+<!-- Reusable account section (login/register, or the signed-in user's menu) -->
+<ng-template #accountLinks>
+  @if (auth.currentUser(); as user) {
+    @if (auth.isAdmin()) {
+      <li><a routerLink="/admin/dashboard" (click)="closeMobileMenu()"><i class="bi bi-speedometer2"></i> <span>Admin Dashboard</span></a></li>
+      <li><a routerLink="/admin/help" (click)="closeMobileMenu()"><i class="bi bi-life-preserver"></i> <span>Help Centre</span></a></li>
+    } @else {
+      <li><a routerLink="/profile" (click)="closeMobileMenu()"><i class="bi bi-person"></i> <span>My Profile</span></a></li>
+      <li><a routerLink="/orders" (click)="closeMobileMenu()"><i class="bi bi-bag"></i> <span>My Orders</span></a></li>
+      <li><a routerLink="/help" (click)="closeMobileMenu()"><i class="bi bi-life-preserver"></i> <span>Help Centre</span></a></li>
+    }
+    <li><a href="javascript:void(0)" class="text-danger" (click)="logout(); closeMobileMenu()"><i class="bi bi-box-arrow-right"></i> <span>Logout</span></a></li>
+  } @else {
+    <li><a routerLink="/login" (click)="closeMobileMenu()"><i class="bi bi-box-arrow-in-right"></i> <span>Login</span></a></li>
+    <li><a routerLink="/register" (click)="closeMobileMenu()"><i class="bi bi-person-plus"></i> <span>Register</span></a></li>
+  }
+</ng-template>
+
+@if (!isAdminArea()) {
+  <!-- Promo ribbon (customer pages) -->
+  @if (!promoDismissed() && auth.isLoggedIn()) {
+    <div class="promo-ribbon">
+      <div class="container position-relative text-center">
+        <span class="promo-text">
+          <i class="bi bi-truck"></i> Free shipping on orders over ₹500
+          <span class="promo-sep">·</span>
+          <i class="bi bi-stars"></i> New arrivals every week
+        </span>
+        <button type="button" class="promo-close" aria-label="Dismiss" (click)="dismissPromo()">&times;</button>
+      </div>
+    </div>
+  }
+}
+
+<header class="se-header" [class.se-header-scrolled]="scrolled()" [class.se-header-admin]="isAdminArea()">
+  <div class="se-header-bar">
+    <!-- Hamburger: first in the DOM and pinned via CSS so it is always the top-left element -->
+    <button
+      type="button"
+      class="se-hamburger"
+      [class.is-open]="mobileMenuOpen()"
+      (click)="toggleMobileMenu()"
+      aria-controls="se-mobile-nav"
+      [attr.aria-expanded]="mobileMenuOpen()"
+      aria-label="Toggle navigation menu"
+    >
+      <span class="se-hamburger-box" aria-hidden="true">
+        <span class="se-hamburger-line"></span>
+        <span class="se-hamburger-line"></span>
+        <span class="se-hamburger-line"></span>
+      </span>
+    </button>
+
+    <a class="se-brand" [routerLink]="isAdminArea() ? '/admin/dashboard' : '/home'" (click)="closeMobileMenu()">
+      <i class="bi bi-bag-heart-fill brand-icon"></i>
+      <span>ShopEase</span>
+      @if (isAdminArea()) { <span class="badge bg-warning text-dark">Admin</span> }
+    </a>
+
+    <!-- Horizontal nav: desktop / large-tablet only -->
+    <nav class="se-desktop-nav" aria-label="Main navigation">
+      <ul class="se-nav-list">
+        <ng-container [ngTemplateOutlet]="navLinks" />
+      </ul>
+
+      @if (!isAdminArea()) {
+        <ul class="se-nav-list se-nav-icons">
+          <ng-container [ngTemplateOutlet]="quickIcons" />
+        </ul>
+      }
+
+      <ul class="se-nav-list se-account-menu" [class.se-account-menu--guest]="!auth.currentUser()">
+        @if (auth.currentUser(); as user) {
+          <li class="dropdown">
+            <a class="dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="bi bi-person-circle"></i> {{ user.name }}
+              @if (auth.isAdmin()) { <span class="badge bg-warning text-dark ms-1">Admin</span> }
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <ng-container [ngTemplateOutlet]="accountLinks" />
+            </ul>
+          </li>
+        } @else {
+          <ng-container [ngTemplateOutlet]="accountLinks" />
+        }
+      </ul>
+    </nav>
+
+    <!-- Compact quick-access on mobile: cart stays one tap away without opening the full menu -->
+    @if (!isAdminArea()) {
+      <a class="se-mobile-cart" routerLink="/cart" (click)="closeMobileMenu()" aria-label="Cart">
+        <span class="nav-icon-wrapper"><i class="bi bi-cart3"></i><span class="badge bg-danger rounded-pill">{{ cart.itemCount() || '' }}</span></span>
+      </a>
+    }
+  </div>
+
+  <!-- Backdrop: click outside the panel to close it -->
+  @if (mobileMenuOpen()) {
+    <div class="se-nav-backdrop" (click)="closeMobileMenu()"></div>
+  }
+
+  <!-- Mobile dropdown panel — a grid row animated 0fr→1fr so it expands to its true content height,
+       with an inner clipping wrapper (required by that technique) that also scrolls if content is tall. -->
+  <nav #mobileNavEl id="se-mobile-nav" class="se-mobile-nav" [class.open]="mobileMenuOpen()" aria-label="Mobile navigation" [attr.aria-hidden]="!mobileMenuOpen()">
+    <div class="se-mobile-nav-inner">
+      <ul class="se-mobile-list">
+        <ng-container [ngTemplateOutlet]="navLinks" />
+      </ul>
+      @if (!isAdminArea()) {
+        <ul class="se-mobile-list">
+          <ng-container [ngTemplateOutlet]="quickIcons" />
+        </ul>
+      }
+      <hr>
+      <ul class="se-mobile-list">
+        <ng-container [ngTemplateOutlet]="accountLinks" />
+      </ul>
+    </div>
+  </nav>
+</header>

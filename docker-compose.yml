@@ -1,0 +1,116 @@
+# ═══════════════════════════════════════════════════════════════════
+#  ShopEase — three services, one network, one volume.
+#
+#      docker compose up -d --build     start everything
+#      docker compose ps                see the three containers
+#      docker compose down              stop (data survives)
+#      docker compose down -v           stop AND delete the volume
+#
+#  The values below are demo credentials, deliberately in plain sight
+#  so the class can read them. Real deployments inject these from a
+#  secret store — never from a file committed next to the source.
+# ═══════════════════════════════════════════════════════════════════
+
+name: shopease
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────
+  #  db — PostgreSQL. Pulled, not built.
+  # ─────────────────────────────────────────────────────────────────
+  db:
+    image: postgres:17-alpine
+    container_name: shopease-db
+    environment:
+      # POSTGRES_PASSWORD is mandatory — without it the entrypoint aborts with
+      # "Database is uninitialized and superuser password is not specified".
+      # Quoted because the '#' would otherwise start a YAML comment.
+      POSTGRES_USER: "shopease"
+      POSTGRES_PASSWORD: "ShopEase#2026dev"
+      POSTGRES_DB: "shopease"
+    ports:
+      - "5432:5432"          # host:container — only so you can attach psql/pgAdmin
+    volumes:
+      # Postgres writes to /var/lib/postgresql/data. Mounting the old
+      # /var/opt/mssql path would start cleanly and report healthy while
+      # storing everything in the container's writable layer — data gone
+      # on the next `down`. The path matters more than it looks.
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - shopease-net
+    healthcheck:
+      # pg_isready, NOT a port probe: during first-boot initdb Postgres runs a
+      # temporary local-only server, so a raw 5432 check reports healthy while
+      # connections are still refused — and `api` gates on this.
+      # Both -U and -d are required for the same reason.
+      test: ["CMD-SHELL", "pg_isready -U shopease -d shopease"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  # ─────────────────────────────────────────────────────────────────
+  #  api — ASP.NET Core 10. Built from Backend/Dockerfile.
+  # ─────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    image: shopease-api:1.0
+    container_name: shopease-api
+    environment:
+      # Development keeps Swagger on and seeds the 16 demo users.
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_HTTP_PORTS: "8080"
+
+      # "db" is the service name above — resolved by Docker's embedded DNS.
+      # Note it is NOT localhost: inside this container, localhost is this container.
+      #
+      # Npgsql keywords differ from SQL Server's, and three of the old ones fail
+      # in ways that point at the wrong thing:
+      #   Server=db,1433          -> Npgsql reads a comma-separated Server as a
+      #                              multi-host failover list and tries to resolve
+      #                              a host literally named "1433".
+      #   MultipleActiveResultSets-> no equivalent; parser throws "Keyword not supported".
+      #   TrustServerCertificate  -> a lookalike. This image ships with TLS off
+      #                              entirely, so it would be a false all-clear.
+      ConnectionStrings__ShopEaseDb: "Host=db;Port=5432;Database=shopease;Username=shopease;Password=ShopEase#2026dev"
+
+      # appsettings.json ships this empty and the real one lives in user-secrets,
+      # which never enters an image. Without this line the API cannot start.
+      Jwt__SigningKey: "shopease-docker-demo-signing-key-change-me-in-production-2026"
+
+      Cors__AllowedOrigins__0: "http://localhost:4200"
+    ports:
+      - "5110:8080"          # published only so Swagger is reachable
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - shopease-net
+    restart: unless-stopped  # belt-and-braces if it still loses the race to SQL
+
+  # ─────────────────────────────────────────────────────────────────
+  #  web — nginx + the compiled Angular bundle. Built from src/ShopEase.Web.
+  # ─────────────────────────────────────────────────────────────────
+  web:
+    build:
+      context: ./src/ShopEase.Web
+      dockerfile: Dockerfile
+    image: shopease-web:1.0
+    container_name: shopease-web
+    ports:
+      - "4200:80"            # this is the only port a student needs
+    depends_on:
+      - api                  # so the hostname "api" resolves when nginx starts
+    networks:
+      - shopease-net
+    restart: unless-stopped
+
+# ─────────────────────────────────────────────────────────────────
+networks:
+  shopease-net:
+    driver: bridge
+
+volumes:
+  pgdata:

@@ -1,0 +1,151 @@
+<main class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-layout-text-window-reverse text-primary"></i> Home Page Content</h2>
+    <div class="d-flex gap-2">
+      <a routerLink="/home" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i> Open Live</a>
+      <button class="btn btn-outline-danger" (click)="resetLayout()"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+      <button class="btn btn-shopease" (click)="publish()"><i class="bi bi-cloud-upload"></i> Publish</button>
+    </div>
+  </div>
+
+  <div class="alert alert-info py-2">
+    <i class="bi bi-info-circle-fill"></i> Pick an area from the left, edit it in the middle, and watch the live preview on the right. Click <strong>Publish</strong> to push it live to customers instantly.
+  </div>
+
+  <div class="row g-3">
+    <!-- Submenu -->
+    <div class="col-lg-3">
+      <h6 class="text-muted text-uppercase small fw-bold">Sections</h6>
+      <div class="mb-2" style="cursor:pointer;border:1px solid var(--se-border);border-radius:8px;padding:.6rem .75rem;"
+           [class.border-primary]="selected() === 'hero'" [style.background]="selected() === 'hero' ? '#eff6ff' : '#fff'" [class.opacity-50]="!config().hero.enabled"
+           (click)="select('hero')">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold small"><i class="bi bi-easel text-primary"></i> Hero Banner</span>
+          <i class="bi text-muted" [class.bi-eye]="config().hero.enabled" [class.bi-eye-slash]="!config().hero.enabled"></i>
+        </div>
+      </div>
+
+      @for (sec of config().sections; track sec.id; let i = $index) {
+        <div class="mb-2" style="cursor:pointer;border:1px solid var(--se-border);border-radius:8px;padding:.6rem .75rem;"
+             [class.border-primary]="selected() === i" [style.background]="selected() === i ? '#eff6ff' : '#fff'" [class.opacity-50]="!sec.enabled"
+             (click)="select(i)">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-semibold small"><i class="bi" [class]="'bi-' + typeIcon[sec.type] + ' text-primary'"></i> {{ sec.title }}</span>
+            <span class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-secondary py-0 px-1" [disabled]="i === 0" title="Up" (click)="moveUp(i); $event.stopPropagation()"><i class="bi bi-arrow-up"></i></button>
+              <button class="btn btn-sm btn-outline-secondary py-0 px-1" [disabled]="i === config().sections.length - 1" title="Down" (click)="moveDown(i); $event.stopPropagation()"><i class="bi bi-arrow-down"></i></button>
+              <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Delete" (click)="removeSection(i); $event.stopPropagation()"><i class="bi bi-trash"></i></button>
+            </span>
+          </div>
+          <div class="text-muted" style="font-size:.72rem">{{ typeLabel(sec.type) }}</div>
+        </div>
+      }
+
+      <div class="dropdown mt-2">
+        <button class="btn btn-outline-primary btn-sm w-100 dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-lg"></i> Add Section</button>
+        <ul class="dropdown-menu w-100">
+          @for (t of sectionTypes; track t.value) {
+            <li><a class="dropdown-item" href="javascript:void(0)" (click)="addSection(t.value)"><i class="bi" [class]="'bi-' + typeIcon[t.value]"></i> {{ t.label }}</a></li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <!-- Editor -->
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header bg-white">
+          <h6 class="mb-0">
+            @if (selected() === 'hero') { <i class="bi bi-easel"></i> Hero Banner }
+            @else if (currentSection(); as sec) { <i class="bi" [class]="'bi-' + typeIcon[sec.type]"></i> {{ typeLabel(sec.type) }} }
+            @else { Editor }
+          </h6>
+        </div>
+        <div class="card-body">
+          @if (selected() === 'hero') {
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="e-hero-enabled" [ngModel]="config().hero.enabled" (ngModelChange)="updateHero('enabled', $event)">
+              <label class="form-check-label" for="e-hero-enabled">Show hero banner</label>
+            </div>
+            <div class="mb-3"><label class="form-label fw-semibold">Title</label><input type="text" class="form-control" [ngModel]="config().hero.title" (ngModelChange)="updateHero('title', $event)"></div>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="e-hero-greeting" [ngModel]="config().hero.greeting" (ngModelChange)="updateHero('greeting', $event)">
+              <label class="form-check-label" for="e-hero-greeting">Append customer's name</label>
+            </div>
+            <div class="mb-3"><label class="form-label fw-semibold">Subtitle</label><textarea class="form-control" rows="2" [ngModel]="config().hero.subtitle" (ngModelChange)="updateHero('subtitle', $event)"></textarea></div>
+            <div class="mb-3"><label class="form-label fw-semibold">Button Text</label><input type="text" class="form-control" [ngModel]="config().hero.ctaText" (ngModelChange)="updateHero('ctaText', $event)"></div>
+            <div class="mb-0"><label class="form-label fw-semibold">Button Link</label><input type="text" class="form-control" placeholder="/catalog" [ngModel]="config().hero.ctaLink" (ngModelChange)="updateHero('ctaLink', $event)"></div>
+          } @else if (currentSection(); as sec) {
+            @let idx = selected();
+            @if (idx !== 'hero') {
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="e-enabled" [ngModel]="sec.enabled" (ngModelChange)="updateSection(idx, 'enabled', $event)">
+                <label class="form-check-label" for="e-enabled">Show this section</label>
+              </div>
+              <div class="mb-3"><label class="form-label fw-semibold">Section Title</label><input type="text" class="form-control" [ngModel]="sec.title" (ngModelChange)="updateSection(idx, 'title', $event)"></div>
+
+              @if (sec.type === 'products') {
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Products From</label>
+                  <select class="form-select" [ngModel]="sec.source" (ngModelChange)="updateSection(idx, 'source', $event)">
+                    @for (s of productSources; track s.value) { <option [value]="s.value">{{ s.label }}</option> }
+                  </select>
+                </div>
+                @if (sec.source === 'category') {
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Category</label>
+                    <select class="form-select" [ngModel]="sec.categoryId" (ngModelChange)="updateSection(idx, 'categoryId', $event)">
+                      @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+                    </select>
+                  </div>
+                }
+                <div class="mb-3"><label class="form-label fw-semibold">Max Items</label><input type="number" class="form-control" min="1" max="24" [ngModel]="sec.limit" (ngModelChange)="updateSection(idx, 'limit', $event)"></div>
+                @if (sec.source === 'manual') {
+                  <div class="mb-0">
+                    <label class="form-label fw-semibold">Hand-pick Products</label>
+                    <div class="border rounded p-2" style="max-height:220px;overflow-y:auto;">
+                      @for (p of products(); track p.id) {
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" [id]="'mp-' + p.id" [checked]="(sec.productIds ?? []).includes(p.id)" (change)="toggleManualProduct(idx, p.id, $any($event.target).checked)">
+                          <label class="form-check-label small" [for]="'mp-' + p.id">{{ p.name }} — {{ p.sku }}</label>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              } @else if (sec.type === 'banner') {
+                <div class="mb-3"><label class="form-label fw-semibold">Banner Text</label><input type="text" class="form-control" [ngModel]="sec.text" (ngModelChange)="updateSection(idx, 'text', $event)"></div>
+                <div class="mb-3"><label class="form-label fw-semibold">Button Link (optional)</label><input type="text" class="form-control" placeholder="/catalog?category=2" [ngModel]="sec.link" (ngModelChange)="updateSection(idx, 'link', $event)"></div>
+                <div class="mb-0">
+                  <label class="form-label fw-semibold">Color</label>
+                  <select class="form-select" [ngModel]="sec.color" (ngModelChange)="updateSection(idx, 'color', $event)">
+                    @for (c of bannerColors; track c.v) { <option [value]="c.v">{{ c.l }}</option> }
+                  </select>
+                </div>
+              }
+            }
+          } @else {
+            <p class="text-muted">Select a section on the left.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Live preview -->
+    <div class="col-lg-5">
+      <div style="position:sticky; top:1rem;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0"><i class="bi bi-eye"></i> Live Preview <span class="badge" [class.bg-success]="published()" [class.bg-warning]="!published()" [class.text-dark]="!published()">{{ published() ? 'published' : 'unpublished changes' }}</span></h6>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" [class.active]="!mobilePreview()" title="Desktop" (click)="mobilePreview.set(false)"><i class="bi bi-display"></i></button>
+            <button class="btn btn-outline-secondary" [class.active]="mobilePreview()" title="Mobile" (click)="mobilePreview.set(true)"><i class="bi bi-phone"></i></button>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center">
+          <iframe [style.width]="mobilePreview() ? '390px' : '100%'" style="max-width:100%; height:76vh; border:1px solid var(--se-border); border-radius:10px; background:#fff;"
+                  src="/home?preview=1" title="Home preview"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

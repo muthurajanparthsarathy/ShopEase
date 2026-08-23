@@ -1,0 +1,135 @@
+<main class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/home">Home</a></li>
+      <li class="breadcrumb-item active">My Profile</li>
+    </ol>
+  </nav>
+
+  <h2 class="mb-4"><i class="bi bi-person-circle text-primary"></i> My Profile</h2>
+
+  <div class="row g-4">
+    <!-- Profile Info -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-person"></i> Personal Information</h5></div>
+        <div class="card-body">
+          <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
+            <div class="alert alert-info py-2 small mb-3">
+              <i class="bi bi-info-circle-fill"></i> Fields marked with <span class="text-danger fw-bold">*</span> are mandatory.
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" formControlName="name"
+                     [class.is-invalid]="profileSubmitted() && profileForm.controls.name.invalid" [class.is-valid]="profileSubmitted() && profileForm.controls.name.valid">
+              <div class="invalid-feedback">{{ profileErrorFor('name') }}</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-control" [value]="fullUser()?.email" disabled>
+              <small class="text-muted">Email cannot be changed.</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+              <input type="tel" class="form-control" formControlName="phone"
+                     [class.is-invalid]="profileSubmitted() && profileForm.controls.phone.invalid" [class.is-valid]="profileSubmitted() && profileForm.controls.phone.valid">
+              <div class="invalid-feedback">{{ profileErrorFor('phone') }}</div>
+            </div>
+            <button type="submit" class="btn btn-shopease"><i class="bi bi-check-lg"></i> Save Changes</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Addresses -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Delivery Addresses</h5>
+          <button class="btn btn-sm btn-shopease" data-bs-toggle="modal" data-bs-target="#addressModal" (click)="openAddAddress()">
+            <i class="bi bi-plus-lg"></i> Add
+          </button>
+        </div>
+        <div class="card-body">
+          @if (!fullUser()?.addresses?.length) {
+            <p class="text-muted text-center py-3">No addresses saved. Click "Add" to create one.</p>
+          } @else {
+            @for (a of fullUser()!.addresses; track a.id) {
+              <div class="border rounded p-3 mb-2" [class.border-primary]="a.isDefault">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>{{ a.label }}</strong>
+                    @if (a.isDefault) { <span class="badge bg-primary">Default</span> }
+                    <p class="mb-0 small text-muted">{{ a.line }}, {{ a.city }}, {{ a.state }} - {{ a.postalCode }}</p>
+                  </div>
+                  <div class="d-flex gap-1">
+                    @if (!a.isDefault) {
+                      <button class="btn btn-outline-primary btn-sm" title="Set Default" (click)="setDefault(a)"><i class="bi bi-star"></i></button>
+                    }
+                    <button class="btn btn-outline-secondary btn-sm" title="Edit" data-bs-toggle="modal" data-bs-target="#addressModal" (click)="openEditAddress(a)"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" title="Delete" (click)="deleteAddress(a)"><i class="bi bi-trash"></i></button>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Address Modal -->
+  <div class="modal fade" id="addressModal" tabindex="-1" #addressModalEl>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form [formGroup]="addressForm" (ngSubmit)="saveAddress()" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title">{{ modalTitle() }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info py-2 small mb-3">
+              <i class="bi bi-info-circle-fill"></i> Fields marked with <span class="text-danger fw-bold">*</span> are mandatory.
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Label <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" placeholder="Home, Work, etc." formControlName="label"
+                     [class.is-invalid]="addressSubmitted() && addressForm.controls.label.invalid" [class.is-valid]="addressSubmitted() && addressForm.controls.label.valid">
+              <div class="invalid-feedback">{{ addressErrorFor('label') }}</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Address Line <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" placeholder="Street, apartment, etc." formControlName="line"
+                     [class.is-invalid]="addressSubmitted() && addressForm.controls.line.invalid" [class.is-valid]="addressSubmitted() && addressForm.controls.line.valid">
+              <div class="invalid-feedback">{{ addressErrorFor('line') }}</div>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">City <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" formControlName="city"
+                       [class.is-invalid]="addressSubmitted() && addressForm.controls.city.invalid" [class.is-valid]="addressSubmitted() && addressForm.controls.city.valid">
+                <div class="invalid-feedback">{{ addressErrorFor('city') }}</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">State <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" formControlName="state"
+                       [class.is-invalid]="addressSubmitted() && addressForm.controls.state.invalid" [class.is-valid]="addressSubmitted() && addressForm.controls.state.valid">
+                <div class="invalid-feedback">{{ addressErrorFor('state') }}</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">PIN Code <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" maxlength="6" formControlName="postalCode"
+                       [class.is-invalid]="addressSubmitted() && addressForm.controls.postalCode.invalid" [class.is-valid]="addressSubmitted() && addressForm.controls.postalCode.valid">
+                <div class="invalid-feedback">{{ addressErrorFor('postalCode') }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-shopease"><i class="bi bi-check-lg"></i> Save Address</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

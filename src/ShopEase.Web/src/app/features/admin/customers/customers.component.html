@@ -1,0 +1,89 @@
+<main class="container-fluid py-4 px-4">
+  <h2 class="mb-4"><i class="bi bi-people text-primary"></i> User Management</h2>
+
+  <div class="filter-panel">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4"><label class="form-label">Search</label><input type="text" class="form-control" placeholder="Search by name, email, phone..." [ngModel]="search()" (ngModelChange)="search.set($event); onFilterChange()"></div>
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select class="form-select" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event); onFilterChange()">
+          <option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end"><button class="btn btn-clear-filter" (click)="clearFilters()"><i class="bi bi-x-circle"></i> Clear Filter</button></div>
+    </div>
+  </div>
+
+  <p class="text-muted">{{ paged().totalItems }} customer(s)</p>
+
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Addresses</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        @if (!paged().items.length) { <tr><td colspan="8" class="text-center text-muted py-4">No customers found.</td></tr> }
+        @for (c of paged().items; track c.id; let i = $index) {
+          <tr>
+            <td>{{ (paged().currentPage - 1) * paged().perPage + i + 1 }}</td>
+            <td class="fw-semibold">{{ c.name }}</td>
+            <td>{{ c.email }}</td>
+            <td>{{ c.phone }}</td>
+            <td>{{ c.addresses.length }}</td>
+            <td>{{ formatDate(c.createdAt) }}</td>
+            <td><span class="badge" [class.bg-success]="c.isActive" [class.bg-secondary]="!c.isActive">{{ c.isActive ? 'Active' : 'Inactive' }}</span></td>
+            <td>
+              <button class="btn btn-outline-info btn-sm" title="View" (click)="viewUser(c)"><i class="bi bi-eye"></i></button>
+              <button class="btn btn-sm" [class.btn-outline-warning]="c.isActive" [class.btn-outline-success]="!c.isActive" [title]="c.isActive ? 'Deactivate' : 'Activate'" (click)="toggleStatus(c)">
+                <i class="bi" [class.bi-pause-circle]="c.isActive" [class.bi-play-circle]="!c.isActive"></i>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (paged().totalPages > 1) {
+    <div class="mt-3">
+      <app-pagination [page]="paged()" (pageChange)="goToPage($event)" />
+    </div>
+  }
+
+  <!-- View User Modal -->
+  <div class="modal fade" id="viewUserModal" tabindex="-1" #viewModalEl>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-eye text-info"></i> User Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          @if (viewingUser(); as user) {
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Full Name</label><div class="fw-semibold fs-5">{{ user.name }}</div></div>
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Email</label><div>{{ user.email }}</div></div>
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Phone</label><div>{{ user.phone }}</div></div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Role</label><div><span class="badge bg-info">Customer</span></div></div>
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Status</label><div><span class="badge" [class.bg-success]="user.isActive" [class.bg-secondary]="!user.isActive">{{ user.isActive ? 'Active' : 'Inactive' }}</span></div></div>
+                <div class="mb-3"><label class="form-label text-muted small mb-0">Joined</label><div class="small">{{ formatDateTime(user.createdAt) }}</div></div>
+              </div>
+              <div class="col-12">
+                <label class="form-label text-muted small mb-0">Addresses ({{ user.addresses.length }})</label>
+                @if (user.addresses.length) {
+                  <div class="list-group mt-1">
+                    @for (a of user.addresses; track a.id) { <div class="list-group-item"><strong>{{ a.label }}</strong>: {{ a.line }}, {{ a.city }}, {{ a.state }} - {{ a.postalCode }}</div> }
+                  </div>
+                } @else {
+                  <div class="text-muted"><em>No addresses on file.</em></div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+      </div>
+    </div>
+  </div>
+</main>

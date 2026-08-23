@@ -1,0 +1,21 @@
+# .dockerignore applies ONLY to its own build context directory.
+# The context here is ./src/ShopEase.Web, so this file must live here.
+
+# node_modules holds platform-specific native binaries (esbuild).
+# Copying Windows ones over the Alpine ones installed by `npm ci`
+# breaks the Angular build. It is also ~60 MB of pointless upload.
+node_modules
+dist
+.angular
+
+# Editor / OS noise
+.vscode
+.idea
+**/Thumbs.db
+**/.DS_Store
+
+# Docker's own files
+Dockerfile
+.dockerignore
+
+**/*.bak

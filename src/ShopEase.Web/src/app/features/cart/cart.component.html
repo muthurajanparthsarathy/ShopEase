@@ -1,0 +1,123 @@
+<main class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/catalog">Catalog</a></li>
+      <li class="breadcrumb-item active">Shopping Cart</li>
+    </ol>
+  </nav>
+
+  <h2 class="mb-4"><i class="bi bi-cart3 text-primary"></i> Shopping Cart</h2>
+
+  @if (cartStore.summary().items.length === 0) {
+    <div class="card"><div class="card-body">
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-cart-x"></i></div>
+        <h5>Your cart is empty</h5>
+        <p>Browse our catalog to find products you'll love.</p>
+        <a routerLink="/catalog" class="btn btn-shopease mt-2"><i class="bi bi-grid"></i> Browse Products</a>
+      </div>
+    </div></div>
+  } @else {
+    <div class="row g-4">
+      <!-- Cart Items -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">{{ cartStore.summary().itemCount }} item(s) in cart</h5>
+              <button class="btn btn-outline-danger btn-sm" (click)="clearCart()"><i class="bi bi-trash"></i> Clear Cart</button>
+            </div>
+            @for (item of cartStore.summary().items; track item.productId) {
+              <div class="cart-item">
+                <div class="row align-items-center">
+                  <div class="col-md-2"><div class="product-placeholder rounded" style="height:80px;font-size:1.5rem;"><i class="bi bi-box-seam"></i></div></div>
+                  <div class="col-md-4"><h6 class="mb-1">{{ item.name }}</h6><small class="text-muted">{{ item.brand }}</small></div>
+                  <div class="col-md-2 text-center"><span class="text-muted">₹{{ item.price | number:'1.2-2' }}</span></div>
+                  <div class="col-md-2 text-center">
+                    <div class="quantity-control">
+                      <button type="button" (click)="changeQty(item, -1)">−</button>
+                      <input type="number" [ngModel]="item.quantity" (ngModelChange)="setQty(item, $event)" min="1">
+                      <button type="button" (click)="changeQty(item, 1)">+</button>
+                    </div>
+                  </div>
+                  <div class="col-md-1 text-end"><strong>₹{{ (item.price * item.quantity) | number:'1.2-2' }}</strong></div>
+                  <div class="col-md-1 text-end">
+                    <button class="btn btn-outline-secondary btn-sm mb-1" title="Save for later" (click)="saveForLater(item)"><i class="bi bi-bookmark-heart"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" title="Remove" (click)="removeItem(item)"><i class="bi bi-x-lg"></i></button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (saved().length) {
+          <div class="card mt-4">
+            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-bookmark-heart text-primary"></i> Saved for Later</h5></div>
+            <div class="card-body">
+              @for (item of saved(); track item.productId) {
+                <div class="cart-item">
+                  <div class="row align-items-center">
+                    <div class="col-md-2"><div class="product-placeholder rounded" style="height:70px;font-size:1.3rem;"><i class="bi bi-box-seam"></i></div></div>
+                    <div class="col-md-5"><h6 class="mb-1">{{ item.name }}</h6><small class="text-muted">{{ item.brand }}</small></div>
+                    <div class="col-md-2 text-center text-muted">₹{{ item.price | number:'1.2-2' }}</div>
+                    <div class="col-md-3 text-end">
+                      <button class="btn btn-outline-primary btn-sm" (click)="moveToCart(item)"><i class="bi bi-cart-plus"></i> Move to Cart</button>
+                      <button class="btn btn-outline-danger btn-sm" title="Remove" (click)="removeSaved(item)"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Cart Summary -->
+      <div class="col-lg-4">
+        <div class="cart-summary">
+          <h5 class="fw-bold mb-3"><i class="bi bi-receipt"></i> Order Summary</h5>
+          <div class="summary-row"><span>Subtotal</span><span>₹{{ cartStore.summary().subtotal | number:'1.2-2' }}</span></div>
+          @if (cartStore.summary().discount > 0) {
+            <div class="summary-row text-success"><span>Discount{{ cartStore.summary().coupon ? ' (' + cartStore.summary().coupon + ')' : '' }}</span><span>− ₹{{ cartStore.summary().discount | number:'1.2-2' }}</span></div>
+          }
+          <div class="summary-row"><span>Tax (18% GST)</span><span>₹{{ cartStore.summary().tax | number:'1.2-2' }}</span></div>
+          <div class="summary-row">
+            <span>Shipping</span>
+            <span>@if (cartStore.summary().shipping === 0) { <span class="text-success">FREE</span> } @else { ₹{{ cartStore.summary().shipping | number:'1.2-2' }} }</span>
+          </div>
+          @if (cartStore.summary().subtotal < 500 && cartStore.summary().subtotal > 0) {
+            <small class="text-muted d-block mb-2">Free shipping on orders above ₹500</small>
+          }
+          <div class="summary-row total"><span>Total</span><span>₹{{ cartStore.summary().total | number:'1.2-2' }}</span></div>
+
+          <div class="mt-3">
+            @if (cartStore.summary().coupon; as applied) {
+              <div class="alert alert-success py-2 px-3 d-flex justify-content-between align-items-center mb-0">
+                <span class="small"><i class="bi bi-tag-fill"></i> <strong>{{ applied }}</strong> applied</span>
+                <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none" (click)="removeCoupon()">Remove</button>
+              </div>
+            } @else {
+              <label class="form-label small fw-semibold mb-1">Have a coupon?</label>
+              <div class="input-group input-group-sm mb-1">
+                <input type="text" class="form-control text-uppercase" placeholder="Enter code" [ngModel]="couponCode()" (ngModelChange)="couponCode.set($event)">
+                <button class="btn btn-outline-primary" (click)="applyCoupon()">Apply</button>
+              </div>
+              <div class="small text-muted">
+                Try:
+                @for (c of couponHints; track c.code) {
+                  <code class="coupon-hint" role="button" [title]="c.label" (click)="useHint(c.code)">{{ c.code }}</code>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="d-grid gap-2 mt-3">
+            <a routerLink="/checkout" class="btn btn-shopease btn-lg"><i class="bi bi-bag-check"></i> Proceed to Checkout</a>
+            <a routerLink="/catalog" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Continue Shopping</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</main>
