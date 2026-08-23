@@ -7,6 +7,10 @@
   "outputDirectory": "dist/ShopEase.Web/browser",
 
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://shopease-5hpr.onrender.com/api/:path*"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
