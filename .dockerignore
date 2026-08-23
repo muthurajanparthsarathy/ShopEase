@@ -14,10 +14,6 @@
 **/Thumbs.db
 **/.DS_Store
 
-# ── Docker's own files ──
-**/Dockerfile
-**/.dockerignore
-docker-compose*.yml
 
 # ── Backups created before containerising ──
 **/*.bak
