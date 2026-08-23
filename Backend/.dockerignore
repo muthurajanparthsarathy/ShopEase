@@ -15,9 +15,6 @@
 **/*.user
 **/*.suo
 
-# Docker's own files
-Dockerfile
-.dockerignore
 
 # Backups created before containerising
 **/*.bak
@@ -25,3 +22,10 @@ Dockerfile
 # Local secrets are injected at runtime, never baked into an image
 **/appsettings.*.local.json
 **/*.pfx
+
+# NOTE: do NOT add 'Dockerfile' or '.dockerignore' here.
+# Some builders (Render's, and BuildKit in certain configurations) resolve the
+# Dockerfile THROUGH the filtered build context. Excluding it makes the build fail
+# with 'failed to read dockerfile: no such file or directory' and a telltale
+# 'transferring dockerfile: 2B'. Local `docker compose build` does NOT reproduce
+# this, because Compose reads the Dockerfile from disk and sends it separately.
