@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/ShopEase.Web/browser",
+
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
