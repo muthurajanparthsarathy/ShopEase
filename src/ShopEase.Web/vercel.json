@@ -9,7 +9,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://shopease-2-rggl.onrender.com/api/:path*"
+      "destination": "https://shopease-3-k1dm.onrender.com/api/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
